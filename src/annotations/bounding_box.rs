@@ -38,35 +38,53 @@ impl BoundingBox {
             Ok(BoundingBox {left, top, right, bottom, category})
         }
     }
-
-    pub fn left(&self) -> f64 {
-        self.left
-    }
-
-    pub fn top(&self) -> f64 {
-        self.top
-    }
-
-    pub fn right(&self) -> f64 {
-        self.right
-    }
-
-    pub fn bottom(&self) -> f64 {
-        self.bottom
-    }
-
-    pub fn category(&self) -> &str {
-        &self.category
-    }
 }
 
-trait BoundingBoxGeometry {
+/// A trait providing methods for computing attributes about boxes.
+///
+/// Any annotation that uses a bounding box as its base has "box like geometry", and therefore can
+/// be passed in to useful functions like non-maximum suppression and intersection over union.
+pub trait BoundingBoxGeometry {
     fn left(&self) -> f64;
     fn top(&self) -> f64;
     fn right(&self) -> f64;
     fn bottom(&self) -> f64;
-    fn category(&self) -> f64;
+    fn category(&self) -> &str;
     fn area(&self) -> f64;
-    fn center(&self) -> f64;
-    fn xyxy(&self) -> f64;
+    fn center(&self) -> (f64, f64);
+    fn as_xyxy(&self) -> (f64, f64, f64, f64);
+}
+
+impl BoundingBoxGeometry for BoundingBox {
+    fn left(&self) -> f64 {
+        self.left
+    }
+
+    fn top(&self) -> f64 {
+        self.top
+    }
+
+    fn right(&self) -> f64 {
+        self.right
+    }
+
+    fn bottom(&self) -> f64 {
+        self.bottom
+    }
+
+    fn category(&self) -> &str {
+        &self.category
+    }
+
+    fn area(&self) -> f64 {
+        (self.right - self.left) * (self.bottom - self.top)
+    }
+
+    fn center(&self) -> (f64, f64) {
+        (0.5_f64*(self.right - self.left), 0.5_f64*(self.bottom - self.top))
+    }
+
+    fn as_xyxy(&self) -> (f64, f64, f64, f64) {
+        (self.left, self.top, self.right, self.bottom)
+    }
 }
