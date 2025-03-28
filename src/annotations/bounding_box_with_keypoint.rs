@@ -34,9 +34,19 @@ impl BoundingBoxWithKeypoint {
         Ok(BoundingBoxWithKeypoint {bounding_box, keypoint})
     }
 
-    pub fn left(&self) -> f64 {0_f64}
-    pub fn top(&self) -> f64 {0_f64}
-    pub fn right(&self) -> f64 {0_f64}
-    pub fn bottom(&self) -> f64 {0_f64}
-    pub fn category(&self) -> &str {&""}
+    pub fn left(&self) -> f64 {
+        self.bounding_box.left()
+    }
+    pub fn top(&self) -> f64 {
+        self.bounding_box.top()
+    }
+    pub fn right(&self) -> f64 {
+        self.bounding_box.right()
+    }
+    pub fn bottom(&self) -> f64 {
+        self.bounding_box.bottom()
+    }
+    pub fn category(&self) -> &str {
+        self.bounding_box.category()
+    }
 }
