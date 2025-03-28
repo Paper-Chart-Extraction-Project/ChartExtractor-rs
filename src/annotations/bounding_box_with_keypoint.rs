@@ -23,15 +23,10 @@ impl BoundingBoxWithKeypoint {
         keypoint_y: f64,
         category: String
     ) -> Result<BoundingBoxWithKeypoint, String> {
-        let bbox: Result<BoundingBox, String> = BoundingBox::new(
-            left, top, right, bottom, category
-        );
-        let bounding_box: BoundingBox = match bbox {
-            Ok(b) => b,
-            Err(s) => return Err(s)
-        };
-        let keypoint: Point = Point {x: keypoint_x, y: keypoint_y};
-        Ok(BoundingBoxWithKeypoint {bounding_box, keypoint})
+        Ok(BoundingBoxWithKeypoint {
+            bounding_box: BoundingBox::new(left, top, right, bottom, category)?,
+            keypoint: Point {x: keypoint_x, y: keypoint_y}
+        })
     }
 }
 
