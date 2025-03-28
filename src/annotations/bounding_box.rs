@@ -56,6 +56,16 @@ impl BoundingBox {
     }
 }
 
+impl fmt::Display for BoundingBox {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "BoundingBox {{ left: {}, top: {}, right: {}, bottom: {}, category: {}}}",
+            self.left, self.top, self.right, self.bottom, self.category
+        )
+    }
+}
+
 /// A trait providing methods for computing attributes about boxes.
 ///
 /// Any annotation that uses a bounding box as its base has "box like geometry", and therefore can
