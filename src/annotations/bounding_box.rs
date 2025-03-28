@@ -1,5 +1,3 @@
-use std::fmt;
-
 /// A struct representing a bounding box.
 /// 
 /// A bounding box is a rectangle used to annotate objects in images for training deep object
@@ -25,7 +23,7 @@ impl BoundingBox {
     ) -> Result<Self, String> {
         if left > right {
             Err(format!(
-                "Failed to create BoundingBox, value for left > value for right ({} > {})",
+                "Failed to create BoundingBox, value for left > value for right ({} > {}).",
                 left,
                 right
             ))
@@ -39,6 +37,20 @@ impl BoundingBox {
             Ok(BoundingBox {left, top, right, bottom, category})
         }
     }
-}
 
-pub trait BoundingBoxOperations {}
+    pub fn left(&self) -> f64 {
+        self.left
+    }
+
+    pub fn top(&self) -> f64 {
+        self.top
+    }
+
+    pub fn right(&self) -> f64 {
+        self.right
+    }
+
+    pub fn bottom(&self) -> f64 {
+        self.bottom
+    }
+}
