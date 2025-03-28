@@ -1,4 +1,4 @@
-use crate::annotations::bounding_box::{BoundingBox};
+use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::point::{Point};
 
 /// A struct representing a BoundingBox + Keypoint annotation.
@@ -33,20 +33,38 @@ impl BoundingBoxWithKeypoint {
         let keypoint: Point = Point {x: keypoint_x, y: keypoint_y};
         Ok(BoundingBoxWithKeypoint {bounding_box, keypoint})
     }
+}
 
-    pub fn left(&self) -> f64 {
+impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
+    fn left(&self) -> f64 {
         self.bounding_box.left()
     }
-    pub fn top(&self) -> f64 {
+
+    fn top(&self) -> f64 {
         self.bounding_box.top()
     }
-    pub fn right(&self) -> f64 {
+
+    fn right(&self) -> f64 {
         self.bounding_box.right()
     }
-    pub fn bottom(&self) -> f64 {
+
+    fn bottom(&self) -> f64 {
         self.bounding_box.bottom()
     }
-    pub fn category(&self) -> &str {
+
+    fn category(&self) -> &str {
         self.bounding_box.category()
+    }
+
+    fn area(&self) -> f64 {
+        self.bounding_box.area()
+    }
+
+    fn center(&self) -> (f64, f64) {
+        self.bounding_box.center()
+    }
+
+    fn as_xyxy(&self) -> (f64, f64, f64, f64) {
+        self.bounding_box.as_xyxy()
     }
 }
