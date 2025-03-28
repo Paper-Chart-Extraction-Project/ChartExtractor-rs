@@ -1,3 +1,27 @@
+use std::fmt;
+
+/// A set of custom errors for more informative error handling.
+#[derive(Debug)]
+pub enum BoundingBoxError {
+    InvalidLeftRight {left: f64, right: f64},
+    InvalidTopBottom {top: f64, bottom: f64}
+}
+
+impl fmt::Display for BoundingBoxError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            BoundingBoxError::InvalidLeftRight {left, right} => {
+                write!(f, "Failed to create BoundingBox, left ({}) > right ({}).", left, right)
+            }
+            BoundingBoxError::InvalidTopBottom {top, bottom} => {
+                write!(f, "Failed to create BoundingBox, top ({}) > bottom ({}).", top, bottom)
+            }
+        }
+    }
+}
+
+impl std::error::Error for BoundingBoxError {}
+
 /// A struct representing a bounding box.
 /// 
 /// A bounding box is a rectangle used to annotate objects in images for training deep object
@@ -21,19 +45,11 @@ impl BoundingBox {
     /// Checks if a box has valid parameters before constructing.
     pub fn new(
         left: f64, top: f64, right: f64, bottom: f64, category: String
-    ) -> Result<Self, String> {
+    ) -> Result<Self, BoundingBoxError> {
         if left > right {
-            Err(format!(
-                "Failed to create BoundingBox, value for left > value for right ({} > {}).",
-                left,
-                right
-            ))
+            Err(BoundingBoxError::InvalidLeftRight {left, right})
         } else if top > bottom {
-            Err(format!(
-                "Failed to create BoundingBox, value for top > value for bottom ({} > {}).",
-                top,
-                bottom
-            ))
+            Err(BoundingBoxError::InvalidTopBottom {top, bottom})
         } else {
             Ok(BoundingBox {left, top, right, bottom, category})
         }
