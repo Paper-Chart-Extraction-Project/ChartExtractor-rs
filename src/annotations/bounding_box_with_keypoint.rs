@@ -1,5 +1,6 @@
 use crate::annotations::bounding_box::{BoundingBox, BoundingBoxError, BoundingBoxGeometry};
 use crate::annotations::point::{Point};
+use std::fmt;
 
 /// A struct representing a BoundingBox + Keypoint annotation.
 ///
@@ -27,6 +28,16 @@ impl BoundingBoxWithKeypoint {
             bounding_box: BoundingBox::new(left, top, right, bottom, category)?,
             keypoint: Point {x: keypoint_x, y: keypoint_y}
         })
+    }
+}
+
+impl fmt::Display for BoundingBoxWithKeypoint {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "BoundingBoxWithKeypoint {{ bounding_box: {}, keypoint: {}}}",
+            self.bounding_box, self.keypoint
+        )
     }
 }
 
