@@ -59,3 +59,14 @@ impl BoundingBox {
         &self.category
     }
 }
+
+trait BoundingBoxGeometry {
+    fn left(&self) -> f64;
+    fn top(&self) -> f64;
+    fn right(&self) -> f64;
+    fn bottom(&self) -> f64;
+    fn category(&self) -> f64;
+    fn area(&self) -> f64;
+    fn center(&self) -> f64;
+    fn xyxy(&self) -> f64;
+}
