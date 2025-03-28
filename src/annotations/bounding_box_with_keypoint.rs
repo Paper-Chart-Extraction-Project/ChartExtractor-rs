@@ -1,5 +1,5 @@
 use crate::annotations::bounding_box::{BoundingBox, BoundingBoxError, BoundingBoxGeometry};
-use crate::annotations::point::{Point};
+use crate::annotations::point::Point;
 use std::fmt;
 
 /// A struct representing a BoundingBox + Keypoint annotation.
@@ -11,7 +11,7 @@ use std::fmt;
 #[derive(Debug)]
 pub struct BoundingBoxWithKeypoint {
     bounding_box: BoundingBox,
-    keypoint: Point
+    keypoint: Point,
 }
 
 impl BoundingBoxWithKeypoint {
@@ -22,11 +22,14 @@ impl BoundingBoxWithKeypoint {
         bottom: f64,
         keypoint_x: f64,
         keypoint_y: f64,
-        category: String
+        category: String,
     ) -> Result<BoundingBoxWithKeypoint, BoundingBoxError> {
         Ok(BoundingBoxWithKeypoint {
             bounding_box: BoundingBox::new(left, top, right, bottom, category)?,
-            keypoint: Point {x: keypoint_x, y: keypoint_y}
+            keypoint: Point {
+                x: keypoint_x,
+                y: keypoint_y,
+            },
         })
     }
 }

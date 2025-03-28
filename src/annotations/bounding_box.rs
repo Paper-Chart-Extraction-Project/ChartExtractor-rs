@@ -3,18 +3,26 @@ use std::fmt;
 /// A set of custom errors for more informative error handling.
 #[derive(Debug)]
 pub enum BoundingBoxError {
-    InvalidLeftRight {left: f64, right: f64},
-    InvalidTopBottom {top: f64, bottom: f64}
+    InvalidLeftRight { left: f64, right: f64 },
+    InvalidTopBottom { top: f64, bottom: f64 },
 }
 
 impl fmt::Display for BoundingBoxError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            BoundingBoxError::InvalidLeftRight {left, right} => {
-                write!(f, "Failed to create BoundingBox, left ({}) > right ({}).", left, right)
+            BoundingBoxError::InvalidLeftRight { left, right } => {
+                write!(
+                    f,
+                    "Failed to create BoundingBox, left ({}) > right ({}).",
+                    left, right
+                )
             }
-            BoundingBoxError::InvalidTopBottom {top, bottom} => {
-                write!(f, "Failed to create BoundingBox, top ({}) > bottom ({}).", top, bottom)
+            BoundingBoxError::InvalidTopBottom { top, bottom } => {
+                write!(
+                    f,
+                    "Failed to create BoundingBox, top ({}) > bottom ({}).",
+                    top, bottom
+                )
             }
         }
     }
@@ -23,7 +31,7 @@ impl fmt::Display for BoundingBoxError {
 impl std::error::Error for BoundingBoxError {}
 
 /// A struct representing a bounding box.
-/// 
+///
 /// A bounding box is a rectangle used to annotate objects in images for training deep object
 /// detection models. An ideal bounding box is the smallest box that totally contains the
 /// object within the image. Bounding boxes are composed of a rectangle and a category denoting
@@ -38,20 +46,30 @@ pub struct BoundingBox {
     top: f64,
     right: f64,
     bottom: f64,
-    category: String
+    category: String,
 }
 
 impl BoundingBox {
     /// Checks if a box has valid parameters before constructing.
     pub fn new(
-        left: f64, top: f64, right: f64, bottom: f64, category: String
+        left: f64,
+        top: f64,
+        right: f64,
+        bottom: f64,
+        category: String,
     ) -> Result<Self, BoundingBoxError> {
         if left > right {
-            Err(BoundingBoxError::InvalidLeftRight {left, right})
+            Err(BoundingBoxError::InvalidLeftRight { left, right })
         } else if top > bottom {
-            Err(BoundingBoxError::InvalidTopBottom {top, bottom})
+            Err(BoundingBoxError::InvalidTopBottom { top, bottom })
         } else {
-            Ok(BoundingBox {left, top, right, bottom, category})
+            Ok(BoundingBox {
+                left,
+                top,
+                right,
+                bottom,
+                category,
+            })
         }
     }
 }
@@ -107,7 +125,10 @@ impl BoundingBoxGeometry for BoundingBox {
     }
 
     fn center(&self) -> (f64, f64) {
-        (0.5_f64*(self.right - self.left), 0.5_f64*(self.bottom - self.top))
+        (
+            0.5_f64 * (self.right - self.left),
+            0.5_f64 * (self.bottom - self.top),
+        )
     }
 
     fn as_xyxy(&self) -> (f64, f64, f64, f64) {

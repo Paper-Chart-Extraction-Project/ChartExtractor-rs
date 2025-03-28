@@ -1,4 +1,4 @@
-use crate::annotations::bounding_box::{BoundingBoxGeometry};
+use crate::annotations::bounding_box::BoundingBoxGeometry;
 use std::fmt;
 
 /// A detection is what is produced as output from an object detection model.
@@ -8,13 +8,15 @@ use std::fmt;
 #[derive(Debug)]
 pub struct Detection<T: BoundingBoxGeometry + fmt::Display> {
     pub annotation: T,
-    pub confidence: f64
+    pub confidence: f64,
 }
 
 impl<T: BoundingBoxGeometry + fmt::Display> fmt::Display for Detection<T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
-            f, "Detection {{ annotation: {}, confidence: {} }}", self.annotation, self.confidence
+            f,
+            "Detection {{ annotation: {}, confidence: {} }}",
+            self.annotation, self.confidence
         )
     }
 }

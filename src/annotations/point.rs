@@ -4,7 +4,7 @@ use std::fmt;
 #[derive(Debug)]
 pub struct Point {
     pub x: f64,
-    pub y: f64
+    pub y: f64,
 }
 
 impl fmt::Display for Point {
