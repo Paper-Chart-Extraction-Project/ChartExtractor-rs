@@ -54,7 +54,7 @@ impl BoundingBox {
         self.bottom
     }
 
-    pub fn category(&self) -> String {
-        self.category
+    pub fn category(&self) -> &str {
+        &self.category
     }
 }
