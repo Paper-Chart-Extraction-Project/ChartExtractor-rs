@@ -53,4 +53,8 @@ impl BoundingBox {
     pub fn bottom(&self) -> f64 {
         self.bottom
     }
+
+    pub fn category(&self) -> String {
+        self.category
+    }
 }
