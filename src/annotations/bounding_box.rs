@@ -3,7 +3,8 @@
 /// A bounding box is a rectangle used to annotate objects in images for training deep object
 /// detection models. An ideal bounding box is the smallest box that totally contains the
 /// object within the image. Bounding boxes are composed of a rectangle and a category denoting
-/// what object it is.
+/// what object it is. When an object detection model runs, it will output bounding boxes as its
+/// output along with a probability encoding its confidence in that box+category.
 ///
 /// This project uses the standard convention of the left side of the image being x=0 and the top
 /// of the image being y=0.
