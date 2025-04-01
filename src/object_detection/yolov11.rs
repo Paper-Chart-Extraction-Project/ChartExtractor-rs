@@ -1,6 +1,6 @@
 use crate::annotations::bounding_box::BoundingBox;
 use crate::annotations::detection::Detection;
-use ndarray::{ArrayBase, Dim, OwnedRepr};
+use ndarray::{Array4, ArrayBase, Dim, OwnedRepr};
 use ort::session::{Session, SessionInputs, SessionInputValue, SessionOutputs};
 use ort::session::builder::SessionBuilder;
 use ort::value::{Tensor, Value};
@@ -24,23 +24,27 @@ impl OrtInferenceSession {
         input_image: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
         time_inference: Option<bool>
     ) -> ort::Result<SessionOutputs> {
-        match time_inference {
+        let do_time_inference = match time_inference {
             Some(t) => t,
             None => false
-        }
-        if time_inference {
-            let time_pre_compute = Instant::now();
-        }
+        };
+        let time_pre_compute = if do_time_inference {
+            Some(Instant::now())
+        } else {
+            None
+        };
+        
         let shape = input_image.shape().to_vec();
         let raw_data = input_image.as_slice().unwrap().to_vec();
         let input_tensor = Tensor::from_array((shape, raw_data.into_boxed_slice()))?;
-        let inputs: Vec<<Cow<str>, SessionInputValue)> = vec![
-            (Cow::Borrowed("images"), input_values)
+        let input_value: SessionInputValue = SessionInputValue::Owned(Value::from(input_tensor));
+        let inputs: Vec<(Cow<str>, SessionInputValue)> = vec![
+            (Cow::Borrowed("images"), input_value)
         ];
         let outputs: SessionOutputs = self.session.run(SessionInputs::from(inputs))?;
-        if time_inference {
+        if do_time_inference {
             let time_post_compute = Instant::now();
-            println!("Inference Time: {:#?}", time_post_compute - time_pre_compute);
+            println!("Inference Time: {:#?}", time_post_compute - time_pre_compute.unwrap());
         }
 
         Ok(outputs)
@@ -61,17 +65,17 @@ impl Yolov11 {
         use_nms: bool,
         model_name: String
     ) -> ort::Result<Self> {
-        let session = OrtInferenceSession::new(model_path)?;
-        Ok(Yolov11{session, input_size, use_nms, model_name})
+        let ort_session = OrtInferenceSession::new(model_path)?;
+        Ok(Yolov11{ort_session, input_size, use_nms, model_name})
     }
 
-    pub fn run_inference(&self, input_tensor: Array4<f32>) -> Vec<Detection> {
+    pub fn run_inference(&self, input_tensor: Array4<f32>) -> Vec<Detection<BoundingBox>> {
         let outputs = self
-            .session
-            .run_inference(input_tensor)
+            .ort_session
+            .run_inference(input_tensor, Some(true))
             .expect("Inference failed");
         let output = outputs["output0"]
-            .try_exact_tensor::<f32>()
+            .try_extract_tensor::<f32>()
             .expect("Failed to extract tensor")
             .into_owned();
         let mut boxes = Vec::new();
@@ -98,18 +102,28 @@ impl Yolov11 {
             }
 
             if max_class_prob > 0.25 {
-                let bbox = BoundingBox::new(
-                    left: (x - w/2.0) as f64,
-                    top: (y - h/2.0) as f64,
-                    right: (x + w/2.0) as f64,
-                    bottom: (y + h/2.0) as f64,
-                    category: String::from(max_class_id)
-                );
-                let detection = Detection {
-                    annotation: bbox,
-                    confidence: max_class_prob as f64
+                let bbox = {
+                    let left: f64 = (x - w/2.0) as f64;
+                    let top: f64 = (y - h/2.0) as f64;
+                    let right: f64 = (x + w/2.0) as f64;
+                    let bottom: f64 = (y + h/2.0) as f64;
+                    let category: String = max_class_id.to_string();
+
+                    BoundingBox::new(left, top, right, bottom, category)
                 };
-                boxes.push(detection);
+                match bbox {
+                    Ok(b) => {
+                        let detection = Detection {
+                            annotation: b,
+                            confidence: max_class_prob as f64
+                        };
+                        boxes.push(detection);
+                    }
+                    Err(e) => {
+                        println!("Error processing bounding box from yolo output.");
+                        println!("{}", e);
+                    }
+                }
             }
         }
         boxes
