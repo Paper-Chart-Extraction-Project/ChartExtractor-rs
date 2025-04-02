@@ -8,7 +8,7 @@ use std::fmt;
 #[derive(Debug)]
 pub struct Detection<T: BoundingBoxGeometry + fmt::Display> {
     pub annotation: T,
-    pub confidence: f64,
+    pub confidence: f32,
 }
 
 impl<T: BoundingBoxGeometry + fmt::Display> fmt::Display for Detection<T> {
