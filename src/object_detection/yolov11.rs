@@ -1,9 +1,8 @@
 use crate::annotations::bounding_box::BoundingBox;
 use crate::annotations::detection::Detection;
-use ndarray::{Array4, Axis, s};
+use ndarray::{Array4, ArrayBase, Axis, Dim, s, ViewRepr};
 use ort::inputs;
 use ort::session::{Session, SessionOutputs};
-use ort::value::TensorRef;
 use std::path::Path;
 
 /// An onnxruntime inference session.
@@ -39,13 +38,15 @@ impl Yolov11 {
     }
 
     pub fn run_inference(
-        &self, input_array: Array4<f32>, confidence: f32
+        &self, input_array: ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>, confidence: f32
     ) -> Vec<Detection<BoundingBox>> {
-        let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
         let outputs: SessionOutputs = self.ort_session.session.run(
-            inputs!["images" => TensorRef::from_array_view(&input_array)?]
-        )?;
-        let output = outputs.slice(s![.., .., 0]);
+            inputs!["images" => input_array].unwrap()
+        ).unwrap();
+        let output = outputs["output0"].try_extract_tensor::<f32>().unwrap();
+        let output = output.t();
+
+        let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
         for row in output.axis_iter(Axis(0)) {
             let row: Vec<_> = row.iter().copied().collect();
             let (class_id, prob) = row
@@ -55,27 +56,20 @@ impl Yolov11 {
                 .map(|(index, value)| (index, *value))
                 .reduce(|accum, row| if row.1 > accum.1 {row} else {accum})
                 .unwrap();
-            if prob < 0.5 {
+            if prob < confidence {
                 continue;
             }
-            let label = self.class_names[class_id];
+            let label = match self.class_names.get(class_id) {
+                Some(v) => v,
+                None => &class_id.to_string()
+            };
+            //let label = &self.class_names[class_id];
             let x = row[0];
             let y = row[1];
             let w = row[2];
             let h = row[3];
-            let bbox = BoundingBox::new(
-                x - (w/2.0),
-                y - (h/2.0),
-                x + (w/2.0),
-                y + (y/2.0),
-                label
-            );
-            detections.push(
-                Detection {
-                    annotation: bbox.unwrap(),
-                    confidence: prob
-                }
-            );
+            let bbox = BoundingBox::new(x - (w/2.0), y - (h/2.0), x + (w/2.0), y + (y/2.0), label.to_string());
+            detections.push(Detection {annotation: bbox.unwrap(), confidence: prob});
         }
         detections
     }
