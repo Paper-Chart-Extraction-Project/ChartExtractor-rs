@@ -3,6 +3,8 @@ use crate::annotations::detection::Detection;
 use ndarray::{Array4, ArrayBase, Axis, Dim, s, ViewRepr};
 use ort::inputs;
 use ort::session::{Session, SessionOutputs};
+use std::fs::File;
+use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
 /// An onnxruntime inference session.
@@ -72,4 +74,8 @@ impl Yolov11 {
         }
         detections
     }
+}
+
+pub fn read_classes_txt_file(filepath: &Path) -> io::Result<Vec<String>> {
+    BufReader::new(File::open(filepath)?).lines().collect()
 }
