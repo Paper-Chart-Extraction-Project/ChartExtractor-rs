@@ -63,7 +63,6 @@ impl Yolov11 {
                 Some(v) => v,
                 None => &class_id.to_string()
             };
-            //let label = &self.class_names[class_id];
             let x = row[0];
             let y = row[1];
             let w = row[2];
