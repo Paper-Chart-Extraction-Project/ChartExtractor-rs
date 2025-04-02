@@ -3,8 +3,8 @@ use std::fmt;
 /// A struct representing a simple point.
 #[derive(Debug)]
 pub struct Point {
-    pub x: f64,
-    pub y: f64,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl fmt::Display for Point {

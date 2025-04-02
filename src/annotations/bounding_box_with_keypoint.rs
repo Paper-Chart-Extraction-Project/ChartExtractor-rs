@@ -16,12 +16,12 @@ pub struct BoundingBoxWithKeypoint {
 
 impl BoundingBoxWithKeypoint {
     pub fn new(
-        left: f64,
-        top: f64,
-        right: f64,
-        bottom: f64,
-        keypoint_x: f64,
-        keypoint_y: f64,
+        left: f32,
+        top: f32,
+        right: f32,
+        bottom: f32,
+        keypoint_x: f32,
+        keypoint_y: f32,
         category: String,
     ) -> Result<BoundingBoxWithKeypoint, BoundingBoxError> {
         Ok(BoundingBoxWithKeypoint {
@@ -45,19 +45,19 @@ impl fmt::Display for BoundingBoxWithKeypoint {
 }
 
 impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
-    fn left(&self) -> f64 {
+    fn left(&self) -> f32 {
         self.bounding_box.left()
     }
 
-    fn top(&self) -> f64 {
+    fn top(&self) -> f32 {
         self.bounding_box.top()
     }
 
-    fn right(&self) -> f64 {
+    fn right(&self) -> f32 {
         self.bounding_box.right()
     }
 
-    fn bottom(&self) -> f64 {
+    fn bottom(&self) -> f32 {
         self.bounding_box.bottom()
     }
 
@@ -65,15 +65,15 @@ impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
         self.bounding_box.category()
     }
 
-    fn area(&self) -> f64 {
+    fn area(&self) -> f32 {
         self.bounding_box.area()
     }
 
-    fn center(&self) -> (f64, f64) {
+    fn center(&self) -> (f32, f32) {
         self.bounding_box.center()
     }
 
-    fn as_xyxy(&self) -> (f64, f64, f64, f64) {
+    fn as_xyxy(&self) -> (f32, f32, f32, f32) {
         self.bounding_box.as_xyxy()
     }
 }
