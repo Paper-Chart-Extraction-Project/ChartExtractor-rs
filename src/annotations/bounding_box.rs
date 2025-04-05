@@ -99,7 +99,7 @@ pub trait BoundingBoxGeometry {
     fn as_xyxy(&self) -> (f32, f32, f32, f32);
     fn intersection_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32;
     fn union_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32;
-    fn intersection_over_union(&self) -> f32;
+    fn intersection_over_union<T: BoundingBoxGeometry> (&self, other: &T) -> f32;
 }
 
 impl BoundingBoxGeometry for BoundingBox {
@@ -159,6 +159,15 @@ impl BoundingBoxGeometry for BoundingBox {
 
     fn union_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
         let intersection_area = self.intersection_area(other);
-        self.area() + other.area() - intersection_area()
+        self.area() + other.area() - intersection_area
+    }
+
+    fn intersection_over_union<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
+        let intersection_area = self.intersection_area(other);
+        let union_area = self.union_area(other);
+        if union_area == 0_f32 {
+            panic!();
+        }
+        intersection_area / union_area
     }
 }
