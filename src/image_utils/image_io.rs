@@ -1,6 +1,6 @@
 use crate::image_utils::image_conversion::convert_rgb_image_to_owned_array;
 use image::{self, RgbImage};
-use ndarray::{Array, ArrayBase, Dim, OwnedRepr};
+use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::path::Path;
 
 pub fn read_image_as_rgb8(filepath: &Path) -> RgbImage {
