@@ -1,4 +1,4 @@
-use ndarray::{Array, ArrayBase, Axis, Dim, OwnedRepr, ViewRepr, s};
+use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr, s};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
