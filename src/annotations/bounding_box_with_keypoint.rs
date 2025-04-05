@@ -78,14 +78,14 @@ impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
     }
 
     fn intersection_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
-        self.intersection_area(other)
+        self.bounding_box.intersection_area(other)
     }
 
     fn union_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
-        self.union_area(other)
+        self.bounding_box.union_area(other)
     }
 
     fn intersection_over_union<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
-        self.intersection_over_union(other)
+        self.bounding_box.intersection_over_union(other)
     }
 }
