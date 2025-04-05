@@ -76,4 +76,16 @@ impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
     fn as_xyxy(&self) -> (f32, f32, f32, f32) {
         self.bounding_box.as_xyxy()
     }
+
+    fn intersection_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
+        self.intersection_area(other)
+    }
+
+    fn union_area<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
+        self.union_area(other)
+    }
+
+    fn intersection_over_union<T: BoundingBoxGeometry> (&self, other: &T) -> f32 {
+        self.intersection_over_union(other)
+    }
 }
