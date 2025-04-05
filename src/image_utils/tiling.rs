@@ -1,3 +1,4 @@
+use ndarray::{Array, ArrayBase, Axis, Dim, OwnedRepr, ViewRepr, s};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
@@ -107,4 +108,35 @@ pub fn validate_tiling_parameters(
         })
     }
     None
+}
+
+/// Tiles an image by returning a vector of immutable views into the image.
+pub fn tile_image(
+    image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
+    tile_size: u32,
+    proportion: OverlapProportion
+) -> Result<Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>>, TilingError> {
+    let image_width = image.shape()[2] as u32;
+    let image_height = image.shape()[3] as u32;
+    if let Some(e) = validate_tiling_parameters(proportion, tile_size, image_width, image_height) {
+        return Err(e);
+    }
+    let mut tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> = Vec::new();
+    let stride = tile_size / (proportion as u32);
+    let num_rows = image_height / stride;
+    let num_columns = image_width / stride;
+
+    for row_ix in 0..num_rows-1 {
+        let mut row_of_tiles: Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>> = vec![];
+        let start_row = (row_ix*stride) as usize;
+        let end_row = ((row_ix+1)*stride) as usize;
+        for col_ix in 0..num_columns-1 {
+            let start_col = (col_ix*stride) as usize;
+            let end_col = ((col_ix+1)*stride) as usize;
+            let tile = image.slice(s![.., .., start_row..end_row, start_col..end_col]);
+            row_of_tiles.push(tile);
+        }
+        tiles.push(row_of_tiles);
+    }
+    Ok(tiles)
 }
