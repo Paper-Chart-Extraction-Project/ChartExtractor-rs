@@ -97,6 +97,9 @@ pub trait BoundingBoxGeometry {
     fn area(&self) -> f32;
     fn center(&self) -> (f32, f32);
     fn as_xyxy(&self) -> (f32, f32, f32, f32);
+    fn intersection_area<T: BoundingBoxGeometry> (&self, other: &T);
+    fn union_area<T: BoundingBoxGeometry> (&self, other: &T);
+    fn intersection_over_union(&self) -> f32;
 }
 
 impl BoundingBoxGeometry for BoundingBox {
