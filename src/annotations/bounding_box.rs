@@ -156,4 +156,9 @@ impl BoundingBoxGeometry for BoundingBox {
             Err(e) => {return 0_f32;}
         }
     }
+
+    fn union_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
+        let intersection_area = self.intersection_area(other);
+        self.area() + other.area() - intersection_area()
+    }
 }
