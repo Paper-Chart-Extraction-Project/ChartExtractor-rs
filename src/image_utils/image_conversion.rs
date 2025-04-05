@@ -1,7 +1,7 @@
 use image::{self, Rgb, RgbImage};
 use ndarray::{ArrayBase, Dim, ViewRepr};
 
-pub fn convert_ArrayView_to_RgbImage(
+pub fn convert_array_view_to_rgb_image(
     image_array: ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>,
 ) -> RgbImage {
     let image_width = image_array.shape()[2] as u32;
