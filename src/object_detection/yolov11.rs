@@ -123,7 +123,6 @@ pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
                 continue;
             }
             let iou = current_det.annotation.intersection_over_union(&other_det.annotation);
-            println!("{:?}", iou);
             if iou > iou_threshold {
                 detections_to_remove[current_index+other_index+1] = true;
             }
