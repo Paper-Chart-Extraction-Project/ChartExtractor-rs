@@ -1,6 +1,6 @@
-use crate::annotations::bounding_box::BoundingBox;
+use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
-use ndarray::{Array4, ArrayBase, Axis, Dim, ViewRepr, s};
+use ndarray::{ArrayBase, Axis, Dim, ViewRepr};
 use ort::inputs;
 use ort::session::{Session, SessionOutputs};
 use std::fs::File;
@@ -101,10 +101,35 @@ impl Yolov11 {
                 confidence: prob,
             });
         }
+        detections = non_maximum_suppression(detections, 0.5_f32);
         detections
     }
 }
 
 pub fn read_classes_txt_file(filepath: &Path) -> io::Result<Vec<String>> {
     BufReader::new(File::open(filepath)?).lines().collect()
+}
+
+/// Non maxmimum suppression is a way of removing duplicate detections.
+pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
+    mut detections: Vec<Detection<T>>,
+    iou_threshold: f32
+) -> Vec<Detection<T>> {
+    detections.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
+    let mut detections_to_remove: Vec<bool> = vec![false; detections.len()];
+    for (current_index, current_det) in detections.iter().enumerate() {
+        for (other_index, other_det) in detections[current_index+1..].iter().enumerate() {
+            if detections_to_remove[current_index+other_index+1] {
+                continue;
+            }
+            let iou = current_det.annotation.intersection_over_union(&other_det.annotation);
+            println!("{:?}", iou);
+            if iou > iou_threshold {
+                detections_to_remove[current_index+other_index+1] = true;
+            }
+        }
+    }
+    let mut drop_iter = detections_to_remove.iter();
+    detections.retain(|_| !drop_iter.next().unwrap());
+    detections
 }
