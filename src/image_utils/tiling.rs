@@ -20,12 +20,61 @@ pub enum TilingError {
     }
 }
 
+impl fmt::Display for TilingError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TilingError::InvalidTileSize {
+                tile_size,
+                image_width,
+                image_height,
+            } => {
+                if tile_size > image_width {
+                    return write!(
+                        f,
+                        "Failed to tile image, tile size ({}) > image width ({}).",
+                        tile_size, image_width 
+                    );
+                } else if tile_size > image_height {
+                    return write!(
+                        f,
+                        "Failed to tile image, tile size ({}) > image height ({}).",
+                        tile_size, image_height
+                    );
+                } else {
+                    panic!();
+                }
+            }
+            TilingError::IncompatibleProportionWithTileSize {
+                tile_size,
+                overlap_proportion,
+            } => {
+                write!(
+                    f,
+                    "Failed to tile image, overlap proportion does not evenly divide tile size."
+                )
+            }
+            TilingError::UnevenImageDivision {
+                image_width,
+                image_height,
+                tile_size,
+                overlap_proportion,
+            } => {
+                write!(
+                    f,
+                    "Failed to tile image, the tiles do not evenly divide the image given the \
+                    overlap proportion.",
+                )
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum OverlapProportion {
-    ONE_HALF = 2,
-    ONE_THIRD = 3,
-    ONE_FOURTH = 4,
-    ONE_FIFTH = 5
+    OneHalf = 2,
+    OneThird = 3,
+    OneFourth = 4,
+    OneFifth = 5
 }
 
 pub fn validate_tiling_parameters(
@@ -37,7 +86,7 @@ pub fn validate_tiling_parameters(
     if tile_size > image_width || tile_size > image_height {
         return Some(TilingError::InvalidTileSize {tile_size, image_width, image_height});
     }
-
+    
     let tile_cleanly_divides = tile_size % (proportion as u32) == 0;
     if !tile_cleanly_divides {
         return Some(TilingError::IncompatibleProportionWithTileSize {
