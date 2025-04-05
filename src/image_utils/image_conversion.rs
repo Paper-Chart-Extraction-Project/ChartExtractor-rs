@@ -29,8 +29,15 @@ pub fn convert_array_view_to_rgb_image(
     rgb_image
 }
 
-pub fn convert_rgb_image_to_owned_array(rgb_image: RgbImage) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>> {
-    let mut image_array = Array::zeros((1, 3, rgb_image.width() as usize, rgb_image.height() as usize));
+pub fn convert_rgb_image_to_owned_array(
+    rgb_image: RgbImage,
+) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>> {
+    let mut image_array = Array::zeros((
+        1,
+        3,
+        rgb_image.width() as usize,
+        rgb_image.height() as usize,
+    ));
     for pixel in rgb_image.enumerate_pixels() {
         let x = pixel.0 as _;
         let y = pixel.1 as _;
