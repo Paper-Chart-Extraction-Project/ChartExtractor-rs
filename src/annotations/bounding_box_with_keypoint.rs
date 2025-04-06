@@ -44,25 +44,46 @@ impl fmt::Display for BoundingBoxWithKeypoint {
     }
 }
 
+impl BoundingBoxWithKeypoint {
+    fn get_keypoint_x(&self) -> f32 {
+        self.keypoint.x
+    }
+    fn get_keypoint_y(&self) -> f32 {
+        self.keypoint.y
+    }
+}
+
 impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
     fn left(&self) -> f32 {
         self.bounding_box.left()
     }
-
     fn top(&self) -> f32 {
         self.bounding_box.top()
     }
-
     fn right(&self) -> f32 {
         self.bounding_box.right()
     }
-
     fn bottom(&self) -> f32 {
         self.bounding_box.bottom()
     }
-
-    fn category(&self) -> &str {
+    fn category(&self) -> &String {
         self.bounding_box.category()
+    }
+
+    fn left_mut(&mut self) -> &mut f32 {
+        self.bounding_box.left_mut()
+    }
+    fn top_mut(&mut self) -> &mut f32 {
+        self.bounding_box.top_mut()
+    }
+    fn right_mut(&mut self) -> &mut f32 {
+        self.bounding_box.right_mut()
+    }
+    fn bottom_mut(&mut self) -> &mut f32 {
+        self.bounding_box.bottom_mut()
+    }
+    fn category_mut(&mut self) -> &mut String {
+        self.bounding_box.category_mut()
     }
 
     fn area(&self) -> f32 {
@@ -75,5 +96,17 @@ impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
 
     fn as_xyxy(&self) -> (f32, f32, f32, f32) {
         self.bounding_box.as_xyxy()
+    }
+
+    fn intersection_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
+        self.bounding_box.intersection_area(other)
+    }
+
+    fn union_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
+        self.bounding_box.union_area(other)
+    }
+
+    fn intersection_over_union<T: BoundingBoxGeometry>(&self, other: &T) -> f32 {
+        self.bounding_box.intersection_over_union(other)
     }
 }
