@@ -133,10 +133,10 @@ pub fn tile_image(
     for row_ix in 0..num_rows - 1 {
         let mut row_of_tiles: Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>> = vec![];
         let start_row = (row_ix * stride) as usize;
-        let end_row = ((row_ix + 1) * stride) as usize;
+        let end_row = start_row + (tile_size as usize);
         for col_ix in 0..num_columns - 1 {
             let start_col = (col_ix * stride) as usize;
-            let end_col = ((col_ix + 1) * stride) as usize;
+            let end_col = start_col + (tile_size as usize);
             let tile = image.slice(s![.., .., start_row..end_row, start_col..end_col]);
             row_of_tiles.push(tile);
         }
