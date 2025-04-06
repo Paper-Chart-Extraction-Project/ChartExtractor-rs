@@ -1,6 +1,7 @@
 use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
-use ndarray::{ArrayBase, Axis, Dim, ViewRepr};
+use crate::image_utils::tiling::{OverlapProportion, TilingError, tile_image};
+use ndarray::{ArrayBase, Axis, Dim, OwnedRepr, ViewRepr};
 use ort::inputs;
 use ort::session::{Session, SessionOutputs};
 use std::fs::File;
@@ -113,22 +114,56 @@ pub fn read_classes_txt_file(filepath: &Path) -> io::Result<Vec<String>> {
 /// Non maxmimum suppression is a way of removing duplicate detections.
 pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
     mut detections: Vec<Detection<T>>,
-    iou_threshold: f32
+    iou_threshold: f32,
 ) -> Vec<Detection<T>> {
     detections.sort_by(|a, b| b.confidence.partial_cmp(&a.confidence).unwrap());
     let mut detections_to_remove: Vec<bool> = vec![false; detections.len()];
     for (current_index, current_det) in detections.iter().enumerate() {
-        for (other_index, other_det) in detections[current_index+1..].iter().enumerate() {
-            if detections_to_remove[current_index+other_index+1] {
+        for (other_index, other_det) in detections[current_index + 1..].iter().enumerate() {
+            if detections_to_remove[current_index + other_index + 1] {
                 continue;
             }
-            let iou = current_det.annotation.intersection_over_union(&other_det.annotation);
+            let iou = current_det
+                .annotation
+                .intersection_over_union(&other_det.annotation);
             if iou > iou_threshold {
-                detections_to_remove[current_index+other_index+1] = true;
+                detections_to_remove[current_index + other_index + 1] = true;
             }
         }
     }
     let mut drop_iter = detections_to_remove.iter();
     detections.retain(|_| !drop_iter.next().unwrap());
     detections
+}
+
+/// Predicts small objects on an image using image tiling.
+///
+/// Tiles an image, predicts on each tile, then corrects the detection's coordinates and
+/// applies NMS to them.
+pub fn tile_and_predict(
+    model: &Yolov11,
+    image_array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
+    tile_size: u32,
+    overlap_proportion: OverlapProportion,
+    confidence: f32,
+) -> Result<Vec<Detection<BoundingBox>>, TilingError> {
+    let tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> =
+        tile_image(&image_array, tile_size, overlap_proportion)?;
+    let stride = tile_size / (overlap_proportion as u32);
+    let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
+    for (row_ix, row_of_tiles) in tiles.iter().enumerate() {
+        for (col_ix, tile) in row_of_tiles.iter().enumerate() {
+            let preds = model.run_inference(*tile, confidence);
+            for mut pred in preds {
+                let x_correction = ((col_ix as u32) * stride) as f32;
+                let y_correction = ((row_ix as u32) * stride) as f32;
+                *pred.annotation.left_mut() += x_correction;
+                *pred.annotation.top_mut() += y_correction;
+                *pred.annotation.right_mut() += x_correction;
+                *pred.annotation.bottom_mut() += y_correction;
+                detections.push(pred);
+            }
+        }
+    }
+    Ok(detections)
 }
