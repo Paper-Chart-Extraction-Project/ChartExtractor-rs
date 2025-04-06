@@ -165,5 +165,6 @@ pub fn tile_and_predict(
             }
         }
     }
+    detections = non_maximum_suppression(detections, 0.5_f32);
     Ok(detections)
 }
