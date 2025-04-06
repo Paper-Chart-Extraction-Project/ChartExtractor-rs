@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
@@ -40,7 +41,7 @@ impl std::error::Error for BoundingBoxError {}
 ///
 /// This project uses the standard convention of the left side of the image being x=0 and the top
 /// of the image being y=0.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BoundingBox {
     left: f32,
     top: f32,

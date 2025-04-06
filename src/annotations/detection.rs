@@ -1,11 +1,12 @@
 use crate::annotations::bounding_box::BoundingBoxGeometry;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A detection is what is produced as output from an object detection model.
 ///
 /// A detection is any annotation combined with a confidence score: a probability value that
 /// encodes the model's belief that the detection is true.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Detection<T: BoundingBoxGeometry + fmt::Display> {
     pub annotation: T,
     pub confidence: f32,

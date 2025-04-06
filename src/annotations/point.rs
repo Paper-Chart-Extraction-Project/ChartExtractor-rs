@@ -1,7 +1,8 @@
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A struct representing a simple point.
-#[derive(Debug)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
