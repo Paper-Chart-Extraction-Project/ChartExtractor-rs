@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BoundingBoxError {
     InvalidLeftRight { left: f32, right: f32 },
     InvalidTopBottom { top: f32, bottom: f32 },
@@ -41,7 +41,7 @@ impl std::error::Error for BoundingBoxError {}
 ///
 /// This project uses the standard convention of the left side of the image being x=0 and the top
 /// of the image being y=0.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct BoundingBox {
     left: f32,
     top: f32,
@@ -195,5 +195,46 @@ impl BoundingBoxGeometry for BoundingBox {
             panic!();
         }
         intersection_area / union_area
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_bbox() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 1_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert!(bbox.is_ok());
+    }
+
+    #[test]
+    fn invalid_left_right_bbox() {
+        let left = 1_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert_eq!(
+            bbox,
+            Err(BoundingBoxError::InvalidLeftRight{ left, right })
+        )
+    }
+
+    #[test]
+    fn invalid_top_bottom_bbox() {
+        let left = 0_f32;
+        let top = 1_f32;
+        let right = 1_f32;
+        let bottom = 0_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert_eq!(
+            bbox,
+            Err(BoundingBoxError::InvalidTopBottom{ top, bottom })
+        )
     }
 }
