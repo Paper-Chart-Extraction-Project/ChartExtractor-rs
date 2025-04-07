@@ -213,6 +213,17 @@ mod tests {
     }
 
     #[test]
+    fn valid_degenerate_bbox() {
+        // A degenerate polygon typically refers to one that is valid, but has 0 area.
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 100_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert!(bbox.is_ok());
+    }
+
+    #[test]
     fn invalid_left_right_bbox() {
         let left = 1_f32;
         let top = 0_f32;
