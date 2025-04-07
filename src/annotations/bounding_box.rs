@@ -248,4 +248,24 @@ mod tests {
             Err(BoundingBoxError::InvalidTopBottom{ top, bottom })
         )
     }
+
+    #[test]
+    fn area() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 3_f32;
+        let bottom = 2_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.area(), 6_f32);
+    }
+
+    #[test]
+    fn degenerate_area() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 100_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.area(), 0_f32);
+    }
 }
