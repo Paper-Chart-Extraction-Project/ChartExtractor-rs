@@ -289,4 +289,122 @@ mod tests {
         assert_eq!(bbox.as_xyxy(), (1_f32, 0_f32, 2_f32, 1_f32));
     }
 
+    #[test]
+    fn intersection_area_no_overlap() {
+        let left_0 = 0_f32;
+        let top_0 = 0_f32;
+        let right_0 = 2_f32;
+        let bottom_0 = 2_f32;
+        let bbox_0 = BoundingBox::new(
+            left_0,
+            top_0,
+            right_0,
+            bottom_0,
+            String::from("test")
+        ).unwrap();
+
+        let left_1 = 3_f32;
+        let top_1 = 3_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 7_f32;
+        let bbox_1 = BoundingBox::new(
+            left_1,
+            top_1,
+            right_1,
+            bottom_1,
+            String::from("test")
+        ).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 0_f32)
+    }
+
+    #[test]
+    fn intersection_area_corners_overlap() {
+        let left_0 = 1_f32;
+        let top_0 = 3_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 = BoundingBox::new(
+            left_0,
+            top_0,
+            right_0,
+            bottom_0,
+            String::from("test")
+        ).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 1_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 = BoundingBox::new(
+            left_1,
+            top_1,
+            right_1,
+            bottom_1,
+            String::from("test")
+        ).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 1_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 1_f32);
+    }
+
+    #[test]
+    fn intersection_area_nested() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 = BoundingBox::new(
+            left_0,
+            top_0,
+            right_0,
+            bottom_0,
+            String::from("test")
+        ).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 3_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 = BoundingBox::new(
+            left_1,
+            top_1,
+            right_1,
+            bottom_1,
+            String::from("test")
+        ).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 2_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 2_f32);
+    }
+
+    #[test]
+    fn intersection_area_nested_degenerate() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 = BoundingBox::new(
+            left_0,
+            top_0,
+            right_0,
+            bottom_0,
+            String::from("test")
+        ).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 2_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 = BoundingBox::new(
+            left_1,
+            top_1,
+            right_1,
+            bottom_1,
+            String::from("test")
+        ).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 0_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 0_f32);
+    }
 }
