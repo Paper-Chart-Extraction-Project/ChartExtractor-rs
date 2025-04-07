@@ -278,4 +278,15 @@ mod tests {
         let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
         assert_eq!(bbox.center(), (1_f32, 0.5_f32));
     }
+    
+    #[test]
+    fn as_xyxy() {
+        let left = 1_f32;
+        let top = 0_f32;
+        let right = 2_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.as_xyxy(), (1_f32, 0_f32, 2_f32, 1_f32));
+    }
+
 }
