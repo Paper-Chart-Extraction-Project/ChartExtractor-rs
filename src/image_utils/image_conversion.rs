@@ -48,3 +48,28 @@ pub fn convert_rgb_image_to_owned_array(
     }
     image_array
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::image_utils::image_io::{read_image_as_array4, read_image_as_rgb8};
+    use ::std::path::Path;
+    use ndarray::s;
+
+    #[test]
+    fn convert_array_view_to_rgb_image_test() {
+        let arr4_img = read_image_as_array4(Path::new("./data/test_data/test_image.png"));
+        let arr4_img_view = arr4_img.slice(s![.., .., 0..3, 0..3]);
+        let rgb_img = read_image_as_rgb8(Path::new("./data/test_data/test_image.png"));
+
+        assert_eq!(convert_array_view_to_rgb_image(arr4_img_view), rgb_img);
+    }
+
+    #[test]
+    fn convert_rgb_image_to_owned_array_test() {
+        let rgb_img = read_image_as_rgb8(Path::new("./data/test_data/test_image.png"));
+        let arr4_img = read_image_as_array4(Path::new("./data/test_data/test_image.png"));
+
+        assert_eq!(convert_rgb_image_to_owned_array(rgb_img), arr4_img);
+    }
+}
