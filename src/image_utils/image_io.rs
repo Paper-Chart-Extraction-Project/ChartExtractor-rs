@@ -34,16 +34,45 @@ mod tests {
     #[test]
     fn read_test_data_as_array4() {
         let img = read_image_as_array4(Path::new("./data/test_data/test_image.png"));
-        // array4s for images are arrays of images. Here we load 1 image. 
+        // Array4s for images are arrays of images. Here we load 1 image.
         // The dimensions for these arrays encode (image, channel, row, column).
-        assert_eq!((img[[0, 0, 0, 0]], img[[0, 1, 0, 0]], img[[0, 2, 0, 0]]), (0.0, 0.0, 0.0));
-        assert_eq!((img[[0, 0, 0, 1]], img[[0, 1, 0, 1]], img[[0, 2, 0, 1]]), (0.0, 0.0, 0.0));
-        assert_eq!((img[[0, 0, 0, 2]], img[[0, 1, 0, 2]], img[[0, 2, 0, 2]]), (0.0, 0.0, 0.0));
-        assert_eq!((img[[0, 0, 1, 0]], img[[0, 1, 1, 0]], img[[0, 2, 1, 0]]), (1.0, 0.0, 0.0));
-        assert_eq!((img[[0, 0, 1, 1]], img[[0, 1, 1, 1]], img[[0, 2, 1, 1]]), (0.0, 1.0, 0.0));
-        assert_eq!((img[[0, 0, 1, 2]], img[[0, 1, 1, 2]], img[[0, 2, 1, 2]]), (0.0, 0.0, 1.0));
-        assert_eq!((img[[0, 0, 2, 0]], img[[0, 1, 2, 0]], img[[0, 2, 2, 0]]), (1.0, 1.0, 1.0));
-        assert_eq!((img[[0, 0, 2, 1]], img[[0, 1, 2, 1]], img[[0, 2, 2, 1]]), (1.0, 1.0, 1.0));
-        assert_eq!((img[[0, 0, 2, 2]], img[[0, 1, 2, 2]], img[[0, 2, 2, 2]]), (1.0, 1.0, 1.0));
+        // Each line below tests one pixel by getting all its channels into a tuple of three
+        // elements.
+        assert_eq!(
+            (img[[0, 0, 0, 0]], img[[0, 1, 0, 0]], img[[0, 2, 0, 0]]),
+            (0.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 0, 1]], img[[0, 1, 0, 1]], img[[0, 2, 0, 1]]),
+            (0.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 0, 2]], img[[0, 1, 0, 2]], img[[0, 2, 0, 2]]),
+            (0.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 1, 0]], img[[0, 1, 1, 0]], img[[0, 2, 1, 0]]),
+            (1.0, 0.0, 0.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 1, 1]], img[[0, 1, 1, 1]], img[[0, 2, 1, 1]]),
+            (0.0, 1.0, 0.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 1, 2]], img[[0, 1, 1, 2]], img[[0, 2, 1, 2]]),
+            (0.0, 0.0, 1.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 2, 0]], img[[0, 1, 2, 0]], img[[0, 2, 2, 0]]),
+            (1.0, 1.0, 1.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 2, 1]], img[[0, 1, 2, 1]], img[[0, 2, 2, 1]]),
+            (1.0, 1.0, 1.0)
+        );
+        assert_eq!(
+            (img[[0, 0, 2, 2]], img[[0, 1, 2, 2]], img[[0, 2, 2, 2]]),
+            (1.0, 1.0, 1.0)
+        );
     }
 }
