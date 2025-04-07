@@ -111,3 +111,36 @@ pub fn pad_right_bottom_img_rbg8(
     }
     Ok(padded_image)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::image_utils::image_io::read_image_as_rgb8;
+    use std::path::Path;
+    
+    fn read_test_image() -> RgbImage {
+        read_image_as_rgb8(Path::new("./data/test_data/test_image.png"))
+    }
+
+    #[test]
+    fn validate_padding_parameters_invalid_width() {}
+
+    #[test]
+    fn validate_padding_parameters_invalid_height() {}
+
+    #[test]
+    fn validate_padding_parameters_invalid_dimensions() {}
+
+    #[test]
+    fn padding_with_invalid_width() {}
+
+    #[test]
+    fn padding_with_invalid_height() {}
+
+    #[test]
+    fn padding_with_invalid_dimensions() {}
+
+    #[test]
+    fn pad_right_bottom() {}
+}
+ 
