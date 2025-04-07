@@ -164,23 +164,9 @@ mod tests {
     #[test]
     fn pad_right_bottom() {
         let unpadded_img = read_test_image();
-        let img = pad_right_bottom_img_rbg8(unpadded_img, 4, 4).unwrap();
-        assert_eq!(img.get_pixel(0, 0), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(1, 0), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(2, 0), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(3, 0), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(0, 1), &Rgb([255, 0, 0]));
-        assert_eq!(img.get_pixel(1, 1), &Rgb([0, 255, 0]));
-        assert_eq!(img.get_pixel(2, 1), &Rgb([0, 0, 255]));
-        assert_eq!(img.get_pixel(3, 1), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(0, 2), &Rgb([255, 255, 255]));
-        assert_eq!(img.get_pixel(1, 2), &Rgb([255, 255, 255]));
-        assert_eq!(img.get_pixel(2, 2), &Rgb([255, 255, 255]));
-        assert_eq!(img.get_pixel(3, 2), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(0, 3), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(1, 3), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(2, 3), &Rgb([0, 0, 0]));
-        assert_eq!(img.get_pixel(3, 3), &Rgb([0, 0, 0]));
+        let padded_img_from_fn = pad_right_bottom_img_rbg8(unpadded_img, 4, 4).unwrap();
+        let padded_truth = read_image_as_rgb8(Path::new("./data/test_data/test_image_padded.png"));
+        asserteq!(unpadded_img_from_fn, padded_truth);
     }
 }
  
