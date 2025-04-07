@@ -116,6 +116,7 @@ pub fn pad_right_bottom_img_rbg8(
 mod tests {
     use super::*;
     use crate::image_utils::image_io::read_image_as_rgb8;
+    use image::Rgb;
     use std::path::Path;
     
     fn read_test_image() -> RgbImage {
@@ -161,15 +162,25 @@ mod tests {
     }
 
     #[test]
-    fn padding_with_invalid_width() {}
-
-    #[test]
-    fn padding_with_invalid_height() {}
-
-    #[test]
-    fn padding_with_invalid_dimensions() {}
-
-    #[test]
-    fn pad_right_bottom() {}
+    fn pad_right_bottom() {
+        let unpadded_img = read_test_image();
+        let img = pad_right_bottom_img_rbg8(unpadded_img, 4, 4).unwrap();
+        assert_eq!(img.get_pixel(0, 0), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(1, 0), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(2, 0), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(3, 0), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(0, 1), &Rgb([255, 0, 0]));
+        assert_eq!(img.get_pixel(1, 1), &Rgb([0, 255, 0]));
+        assert_eq!(img.get_pixel(2, 1), &Rgb([0, 0, 255]));
+        assert_eq!(img.get_pixel(3, 1), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(0, 2), &Rgb([255, 255, 255]));
+        assert_eq!(img.get_pixel(1, 2), &Rgb([255, 255, 255]));
+        assert_eq!(img.get_pixel(2, 2), &Rgb([255, 255, 255]));
+        assert_eq!(img.get_pixel(3, 2), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(0, 3), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(1, 3), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(2, 3), &Rgb([0, 0, 0]));
+        assert_eq!(img.get_pixel(3, 3), &Rgb([0, 0, 0]));
+    }
 }
  
