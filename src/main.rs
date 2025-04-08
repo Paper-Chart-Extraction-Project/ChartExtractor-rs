@@ -3,7 +3,7 @@ mod image_utils;
 mod object_detection;
 use image_utils::image_io::read_image_as_array4;
 use image_utils::tiling::OverlapProportion;
-use object_detection::yolov11::{read_classes_txt_file, tile_and_predict, Yolov11};
+use object_detection::yolov11::{Yolov11, read_classes_txt_file, tile_and_predict};
 use serde_json;
 use std::error::Error;
 use std::path::Path;
@@ -37,7 +37,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     .unwrap();
     let img = read_image_as_array4(Path::new("./data/images/people_on_street.jpg"));
     let now = Instant::now();
-    let preds = tile_and_predict(&model, img, 640, OverlapProportion::OneHalf, 0.5_f32).unwrap();
+    let preds = tile_and_predict(
+        &model,
+        img,
+        640,
+        OverlapProportion::OneHalf,
+        0.5_f32,
+        0.1_f32,
+    )
+    .unwrap();
     println!("Time elapsed: {:?}", now.elapsed());
     println!("{}", serde_json::to_string(&preds).unwrap());
     Ok(())
