@@ -150,7 +150,7 @@ pub fn tile_and_predict(
 ) -> Result<Vec<Detection<BoundingBox>>, TilingError> {
     let tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> =
         tile_image(&image_array, tile_size, overlap_proportion)?;
-    let stride = tile_size / (overlap_proportion as u32);
+    let stride: u32 = (tile_size*overlap_proportion.numerator) / overlap_proportion.denominator;
     let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
     for (row_ix, row_of_tiles) in tiles.iter().enumerate() {
         for (col_ix, tile) in row_of_tiles.iter().enumerate() {

@@ -78,22 +78,14 @@ impl fmt::Display for TilingError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-struct Fraction {
-    numerator: u32,
-    denominator: u32
-}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum OverlapProportion {
-    OneHalf = Fraction { 1_u32, 2_u32 },
-    OneThird = Fraction { 1_u32, 3_u32 },
-    OneFourth = Fraction { 1_u32, 4_u32 },
-    OneFifth = Fraction { 1_u32, 5_u32 },
+pub struct OverlapProportion {
+    pub numerator: u32,
+    pub denominator: u32
 }
 
 impl fmt::Display for OverlapProportion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}/{}", *self.numerator as u32, *self.denominator as u32)
+        write!(f, "{}/{}", self.numerator, self.denominator)
     }
 }
 
@@ -111,16 +103,17 @@ pub fn validate_tiling_parameters(
         });
     }
 
-    let tile_cleanly_divides = tile_size % (proportion as u32) == 0;
+    let tile_cleanly_divides = (tile_size*proportion.numerator) % proportion.denominator == 0;
     if !tile_cleanly_divides {
         return Some(TilingError::IncompatibleProportionWithTileSize {
             tile_size,
             overlap_proportion: proportion,
         });
     }
-
-    let tiles_fit_cleanly_laterally = image_width % (tile_size / (proportion as u32)) == 0;
-    let tiles_fit_cleanly_vertically = image_height % (tile_size / (proportion as u32)) == 0;
+    
+    let stride: u32 = (tile_size*proportion.numerator) / proportion.denominator;
+    let tiles_fit_cleanly_laterally = image_width % stride == 0;
+    let tiles_fit_cleanly_vertically = image_height % stride == 0;
 
     if !tiles_fit_cleanly_laterally || !tiles_fit_cleanly_vertically {
         return Some(TilingError::UnevenImageDivision {
@@ -145,7 +138,7 @@ pub fn tile_image(
         return Err(e);
     }
     let mut tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> = Vec::new();
-    let stride = tile_size / (proportion as u32);
+    let stride: u32 = (tile_size*proportion.numerator) / proportion.denominator;
     let num_rows = image_height / stride;
     let num_columns = image_width / stride;
 
@@ -170,11 +163,12 @@ mod tests {
     use crate::image_utils::image_conversion::convert_array_view_to_rgb_image;
     use crate::image_utils::image_io::{read_image_as_array4, read_image_as_rgb8};
     use std::path::Path;
-
+    
+    const ONE_HALF: OverlapProportion = OverlapProportion { numerator: 1_u32, denominator: 2_u32};
     #[test]
     fn tile_with_invalid_tile_size_for_width() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 8_u32, 12_u32);
+            validate_tiling_parameters(ONE_HALF, 10_u32, 8_u32, 12_u32);
         assert_eq!(
             validation,
             Some(TilingError::InvalidTileSize {
@@ -188,7 +182,7 @@ mod tests {
     #[test]
     fn tile_with_invalid_tile_size_for_height() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 12_u32, 8_u32);
+            validate_tiling_parameters(ONE_HALF, 10_u32, 12_u32, 8_u32);
         assert_eq!(
             validation,
             Some(TilingError::InvalidTileSize {
@@ -202,7 +196,7 @@ mod tests {
     #[test]
     fn tile_with_invalid_tile_size_for_both_dimensions() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 8_u32, 8_u32);
+            validate_tiling_parameters(ONE_HALF, 10_u32, 8_u32, 8_u32);
         assert_eq!(
             validation,
             Some(TilingError::InvalidTileSize {
@@ -216,12 +210,12 @@ mod tests {
     #[test]
     fn tile_with_tile_size_proportion_mismatch() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 17_u32, 68_u32, 68_u32);
+            validate_tiling_parameters(ONE_HALF, 17_u32, 68_u32, 68_u32);
         assert_eq!(
             validation,
             Some(TilingError::IncompatibleProportionWithTileSize {
                 tile_size: 17_u32,
-                overlap_proportion: OverlapProportion::OneHalf
+                overlap_proportion: ONE_HALF
             })
         );
     }
@@ -229,14 +223,14 @@ mod tests {
     #[test]
     fn tile_with_uneven_tile_division_left_right() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 8_u32, 18_u32, 20_u32);
+            validate_tiling_parameters(ONE_HALF, 8_u32, 18_u32, 20_u32);
         assert_eq!(
             validation,
             Some(TilingError::UnevenImageDivision {
                 image_width: 18_u32,
                 image_height: 20_u32,
                 tile_size: 8_u32,
-                overlap_proportion: OverlapProportion::OneHalf
+                overlap_proportion: ONE_HALF
             })
         );
     }
@@ -244,14 +238,14 @@ mod tests {
     #[test]
     fn tile_with_uneven_tile_division_top_down() {
         let validation =
-            validate_tiling_parameters(OverlapProportion::OneHalf, 8_u32, 20_u32, 18_u32);
+            validate_tiling_parameters(ONE_HALF, 8_u32, 20_u32, 18_u32);
         assert_eq!(
             validation,
             Some(TilingError::UnevenImageDivision {
                 image_width: 20_u32,
                 image_height: 18_u32,
                 tile_size: 8_u32,
-                overlap_proportion: OverlapProportion::OneHalf
+                overlap_proportion: ONE_HALF
             })
         );
     }
@@ -259,7 +253,7 @@ mod tests {
     #[test]
     fn test_tiling() {
         let img = read_image_as_array4(Path::new("./data/test_data/test_image.png"));
-        let tiles = tile_image(&img, 2, OverlapProportion::OneHalf).unwrap();
+        let tiles = tile_image(&img, 2, ONE_HALF).unwrap();
         for (row_ix, row) in tiles.iter().enumerate() {
             for (col_ix, tile) in row.iter().enumerate() {
                 let rgb_tile = convert_array_view_to_rgb_image(*tile);
