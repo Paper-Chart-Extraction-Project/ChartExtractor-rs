@@ -2,7 +2,7 @@ use image::{Rgb, RgbImage};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ImagePaddingError {
     InvalidWidth {
         original_width: u32,
@@ -110,4 +110,68 @@ pub fn pad_right_bottom_img_rbg8(
         padded_image.put_pixel(x, y, Rgb([r, g, b]));
     }
     Ok(padded_image)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::image_utils::image_io::read_image_as_rgb8;
+    use image::Rgb;
+    use std::path::Path;
+
+    fn read_test_image() -> RgbImage {
+        read_image_as_rgb8(Path::new("./data/test_data/test_image.png"))
+    }
+
+    #[test]
+    fn validate_padding_parameters_invalid_width() {
+        let invalid_width_result = validate_padding_parameters(10_u32, 10_u32, 5_u32, 15_u32);
+        assert_eq!(
+            invalid_width_result,
+            Some(ImagePaddingError::InvalidWidth {
+                original_width: 10_u32,
+                new_width: 5_u32
+            })
+        );
+    }
+
+    #[test]
+    fn validate_padding_parameters_invalid_height() {
+        let invalid_height_result = validate_padding_parameters(10_u32, 10_u32, 15_u32, 5_u32);
+        assert_eq!(
+            invalid_height_result,
+            Some(ImagePaddingError::InvalidHeight {
+                original_height: 10_u32,
+                new_height: 5_u32
+            })
+        );
+    }
+
+    #[test]
+    fn validate_padding_parameters_invalid_dimensions() {
+        let invalid_dimensions_result = validate_padding_parameters(10_u32, 10_u32, 5_u32, 5_u32);
+        assert_eq!(
+            invalid_dimensions_result,
+            Some(ImagePaddingError::InvalidDimensions {
+                original_width: 10_u32,
+                original_height: 10_u32,
+                new_width: 5_u32,
+                new_height: 5_u32
+            })
+        );
+    }
+
+    #[test]
+    fn validate_padding_parameters_valid() {
+        let valid_result = validate_padding_parameters(10_u32, 10_u32, 15_u32, 15_u32);
+        assert_eq!(valid_result, None);
+    }
+
+    #[test]
+    fn pad_right_bottom() {
+        let unpadded_img = read_test_image();
+        let padded_img_from_fn = pad_right_bottom_img_rbg8(unpadded_img, 4, 4).unwrap();
+        let padded_truth = read_image_as_rgb8(Path::new("./data/test_data/test_image_padded.png"));
+        assert_eq!(padded_img_from_fn, padded_truth);
+    }
 }

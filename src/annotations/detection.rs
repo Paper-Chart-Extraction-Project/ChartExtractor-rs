@@ -6,7 +6,7 @@ use std::fmt;
 ///
 /// A detection is any annotation combined with a confidence score: a probability value that
 /// encodes the model's belief that the detection is true.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct Detection<T: BoundingBoxGeometry + fmt::Display> {
     pub annotation: T,
     pub confidence: f32,

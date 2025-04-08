@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BoundingBoxError {
     InvalidLeftRight { left: f32, right: f32 },
     InvalidTopBottom { top: f32, bottom: f32 },
@@ -41,7 +41,7 @@ impl std::error::Error for BoundingBoxError {}
 ///
 /// This project uses the standard convention of the left side of the image being x=0 and the top
 /// of the image being y=0.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, PartialEq, Serialize)]
 pub struct BoundingBox {
     left: f32,
     top: f32,
@@ -192,8 +192,362 @@ impl BoundingBoxGeometry for BoundingBox {
         let intersection_area = self.intersection_area(other);
         let union_area = self.union_area(other);
         if union_area == 0_f32 {
-            panic!();
+            panic!("Both bounding boxes are degenerate union area is 0, so IOU is undefined.");
         }
         intersection_area / union_area
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn valid_bbox() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 1_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert!(bbox.is_ok());
+    }
+
+    #[test]
+    fn valid_degenerate_bbox() {
+        // A degenerate polygon typically refers to one that is valid, but has 0 area.
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 100_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert!(bbox.is_ok());
+    }
+
+    #[test]
+    fn invalid_left_right_bbox() {
+        let left = 1_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert_eq!(
+            bbox,
+            Err(BoundingBoxError::InvalidLeftRight { left, right })
+        )
+    }
+
+    #[test]
+    fn invalid_top_bottom_bbox() {
+        let left = 0_f32;
+        let top = 1_f32;
+        let right = 1_f32;
+        let bottom = 0_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test"));
+        assert_eq!(
+            bbox,
+            Err(BoundingBoxError::InvalidTopBottom { top, bottom })
+        )
+    }
+
+    #[test]
+    fn area() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 3_f32;
+        let bottom = 2_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.area(), 6_f32);
+    }
+
+    #[test]
+    fn degenerate_area() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 0_f32;
+        let bottom = 100_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.area(), 0_f32);
+    }
+
+    #[test]
+    fn center() {
+        let left = 0_f32;
+        let top = 0_f32;
+        let right = 2_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.center(), (1_f32, 0.5_f32));
+    }
+
+    #[test]
+    fn as_xyxy() {
+        let left = 1_f32;
+        let top = 0_f32;
+        let right = 2_f32;
+        let bottom = 1_f32;
+        let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
+        assert_eq!(bbox.as_xyxy(), (1_f32, 0_f32, 2_f32, 1_f32));
+    }
+
+    #[test]
+    fn intersection_area_no_overlap() {
+        let left_0 = 0_f32;
+        let top_0 = 0_f32;
+        let right_0 = 2_f32;
+        let bottom_0 = 2_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 3_f32;
+        let top_1 = 3_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 7_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 0_f32)
+    }
+
+    #[test]
+    fn intersection_area_corners_overlap() {
+        let left_0 = 1_f32;
+        let top_0 = 3_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 1_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 1_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 1_f32);
+    }
+
+    #[test]
+    fn intersection_area_nested() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 3_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 2_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 2_f32);
+    }
+
+    #[test]
+    fn intersection_area_nested_degenerate() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 2_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_area(&bbox_1), 0_f32);
+        assert_eq!(bbox_1.intersection_area(&bbox_0), 0_f32);
+    }
+
+    #[test]
+    fn union_area_no_overlap() {
+        let left_0 = 0_f32;
+        let top_0 = 0_f32;
+        let right_0 = 2_f32;
+        let bottom_0 = 2_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 3_f32;
+        let top_1 = 3_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 7_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.union_area(&bbox_1), 12_f32);
+        assert_eq!(bbox_1.union_area(&bbox_0), 12_f32);
+    }
+
+    #[test]
+    fn union_area_corners_overlap() {
+        let left_0 = 1_f32;
+        let top_0 = 3_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 1_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.union_area(&bbox_1), 12_f32);
+        assert_eq!(bbox_1.union_area(&bbox_0), 12_f32);
+    }
+
+    #[test]
+    fn union_area_nested() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 3_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.union_area(&bbox_1), 8_f32);
+        assert_eq!(bbox_1.union_area(&bbox_0), 8_f32);
+    }
+
+    #[test]
+    fn union_area_no_overlap_degenerate() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 5_f32;
+        let top_1 = 4_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 8_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.union_area(&bbox_1), 8_f32);
+        assert_eq!(bbox_1.union_area(&bbox_0), 8_f32);
+    }
+
+    #[test]
+    fn iou_no_overlap() {
+        let left_0 = 0_f32;
+        let top_0 = 0_f32;
+        let right_0 = 2_f32;
+        let bottom_0 = 2_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 3_f32;
+        let top_1 = 3_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 7_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_over_union(&bbox_1), 0_f32);
+        assert_eq!(bbox_1.intersection_over_union(&bbox_0), 0_f32);
+    }
+
+    #[test]
+    fn iou_corners_overlap() {
+        let left_0 = 1_f32;
+        let top_0 = 3_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 1_f32;
+        let right_1 = 5_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_over_union(&bbox_1), 1_f32 / 12_f32);
+        assert_eq!(bbox_1.intersection_over_union(&bbox_0), 1_f32 / 12_f32);
+    }
+
+    #[test]
+    fn iou_nested() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 3_f32;
+        let bottom_1 = 4_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_over_union(&bbox_1), 1_f32 / 4_f32);
+        assert_eq!(bbox_1.intersection_over_union(&bbox_0), 1_f32 / 4_f32);
+    }
+
+    #[test]
+    fn iou_one_box_degenerate() {
+        let left_0 = 1_f32;
+        let top_0 = 1_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 2_f32;
+        let bottom_1 = 6_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_over_union(&bbox_1), 0_f32);
+        assert_eq!(bbox_1.intersection_over_union(&bbox_0), 0_f32);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Both bounding boxes are degenerate union area is 0, so IOU is undefined."
+    )]
+    fn iou_both_box_degenerate() {
+        let left_0 = 1_f32;
+        let top_0 = 5_f32;
+        let right_0 = 3_f32;
+        let bottom_0 = 5_f32;
+        let bbox_0 =
+            BoundingBox::new(left_0, top_0, right_0, bottom_0, String::from("test")).unwrap();
+
+        let left_1 = 2_f32;
+        let top_1 = 2_f32;
+        let right_1 = 2_f32;
+        let bottom_1 = 6_f32;
+        let bbox_1 =
+            BoundingBox::new(left_1, top_1, right_1, bottom_1, String::from("test")).unwrap();
+
+        assert_eq!(bbox_0.intersection_over_union(&bbox_1), 0_f32);
+        assert_eq!(bbox_1.intersection_over_union(&bbox_0), 0_f32);
     }
 }
