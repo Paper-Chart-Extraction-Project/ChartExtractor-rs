@@ -146,6 +146,7 @@ pub fn tile_and_predict(
     tile_size: u32,
     overlap_proportion: OverlapProportion,
     confidence: f32,
+    nms_iou_threshold: f32,
 ) -> Result<Vec<Detection<BoundingBox>>, TilingError> {
     let tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> =
         tile_image(&image_array, tile_size, overlap_proportion)?;
@@ -165,7 +166,7 @@ pub fn tile_and_predict(
             }
         }
     }
-    detections = non_maximum_suppression(detections, 0.5_f32);
+    detections = non_maximum_suppression(detections, nms_iou_threshold);
     Ok(detections)
 }
 
