@@ -94,7 +94,7 @@ impl Yolov11 {
                 x - (w / 2.0),
                 y - (h / 2.0),
                 x + (w / 2.0),
-                y + (y / 2.0),
+                y + (h / 2.0),
                 label.to_string(),
             );
             detections.push(Detection {
