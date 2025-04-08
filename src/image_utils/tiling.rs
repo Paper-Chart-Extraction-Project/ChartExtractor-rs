@@ -2,7 +2,7 @@ use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr, s};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TilingError {
     InvalidTileSize {
         tile_size: u32,
@@ -70,7 +70,7 @@ impl fmt::Display for TilingError {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OverlapProportion {
     OneHalf = 2,
     OneThird = 3,
@@ -143,4 +143,94 @@ pub fn tile_image(
         tiles.push(row_of_tiles);
     }
     Ok(tiles)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tile_with_invalid_tile_size_for_width() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 8_u32, 12_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::InvalidTileSize {
+                tile_size: 10_u32,
+                image_width: 8_u32,
+                image_height: 12_u32
+            })
+        );
+    }
+
+    #[test]
+    fn tile_with_invalid_tile_size_for_height() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 12_u32, 8_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::InvalidTileSize {
+                tile_size: 10_u32,
+                image_width: 12_u32,
+                image_height: 8_u32
+            })
+        );
+    }
+
+    #[test]
+    fn tile_with_invalid_tile_size_for_both_dimensions() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 10_u32, 8_u32, 8_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::InvalidTileSize {
+                tile_size: 10_u32,
+                image_width: 8_u32,
+                image_height: 8_u32
+            })
+        );
+    }
+
+    #[test]
+    fn tile_with_tile_size_proportion_mismatch() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 17_u32, 68_u32, 68_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::IncompatibleProportionWithTileSize {
+                tile_size: 17_u32,
+                overlap_proportion: OverlapProportion::OneHalf
+            })
+        );
+    }
+
+    #[test]
+    fn tile_with_uneven_tile_division_left_right() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 8_u32, 18_u32, 20_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::UnevenImageDivision {
+                image_width: 18_u32,
+                image_height: 20_u32,
+                tile_size: 8_u32,
+                overlap_proportion: OverlapProportion::OneHalf
+            })
+        );
+    }
+
+    #[test]
+    fn tile_with_uneven_tile_division_top_down() {
+        let validation =
+            validate_tiling_parameters(OverlapProportion::OneHalf, 8_u32, 20_u32, 18_u32);
+        assert_eq!(
+            validation,
+            Some(TilingError::UnevenImageDivision {
+                image_width: 20_u32,
+                image_height: 18_u32,
+                tile_size: 8_u32,
+                overlap_proportion: OverlapProportion::OneHalf
+            })
+        );
+    }
 }
