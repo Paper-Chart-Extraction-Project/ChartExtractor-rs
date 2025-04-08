@@ -78,16 +78,22 @@ impl fmt::Display for TilingError {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+struct Fraction {
+    numerator: u32,
+    denominator: u32
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum OverlapProportion {
-    OneHalf = 2,
-    OneThird = 3,
-    OneFourth = 4,
-    OneFifth = 5,
+    OneHalf = Fraction { 1_u32, 2_u32 },
+    OneThird = Fraction { 1_u32, 3_u32 },
+    OneFourth = Fraction { 1_u32, 4_u32 },
+    OneFifth = Fraction { 1_u32, 5_u32 },
 }
 
 impl fmt::Display for OverlapProportion {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "1/{}", *self as u32)
+        write!(f, "{}/{}", *self.numerator as u32, *self.denominator as u32)
     }
 }
 
