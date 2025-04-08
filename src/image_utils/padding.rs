@@ -118,7 +118,7 @@ mod tests {
     use crate::image_utils::image_io::read_image_as_rgb8;
     use image::Rgb;
     use std::path::Path;
-    
+
     fn read_test_image() -> RgbImage {
         read_image_as_rgb8(Path::new("./data/test_data/test_image.png"))
     }
@@ -128,7 +128,10 @@ mod tests {
         let invalid_width_result = validate_padding_parameters(10_u32, 10_u32, 5_u32, 15_u32);
         assert_eq!(
             invalid_width_result,
-            Some(ImagePaddingError::InvalidWidth { original_width: 10_u32, new_width: 5_u32 })
+            Some(ImagePaddingError::InvalidWidth {
+                original_width: 10_u32,
+                new_width: 5_u32
+            })
         );
     }
 
@@ -137,7 +140,10 @@ mod tests {
         let invalid_height_result = validate_padding_parameters(10_u32, 10_u32, 15_u32, 5_u32);
         assert_eq!(
             invalid_height_result,
-            Some(ImagePaddingError::InvalidHeight { original_height: 10_u32, new_height: 5_u32 })
+            Some(ImagePaddingError::InvalidHeight {
+                original_height: 10_u32,
+                new_height: 5_u32
+            })
         );
     }
 
@@ -166,7 +172,6 @@ mod tests {
         let unpadded_img = read_test_image();
         let padded_img_from_fn = pad_right_bottom_img_rbg8(unpadded_img, 4, 4).unwrap();
         let padded_truth = read_image_as_rgb8(Path::new("./data/test_data/test_image_padded.png"));
-        asserteq!(unpadded_img_from_fn, padded_truth);
+        assert_eq!(padded_img_from_fn, padded_truth);
     }
 }
- 
