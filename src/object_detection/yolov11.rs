@@ -123,6 +123,9 @@ pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
             if detections_to_remove[current_index + other_index + 1] {
                 continue;
             }
+            if current_det.annotation.category() != other_det.annotation.category() {
+                continue;
+            }
             let iou = current_det
                 .annotation
                 .intersection_over_union(&other_det.annotation);
@@ -174,6 +177,7 @@ pub fn tile_and_predict(
 mod tests {
     use super::*;
 
+    #[test]
     fn nms_no_overlap() {
         let dets: Vec<Detection<BoundingBox>> = vec![
             Detection {
@@ -202,11 +206,12 @@ mod tests {
         ];
         assert_eq!(true_dets, nms_result);
     }
-
+    
+    #[test]
     fn nms_standard_usage() {
         let dets: Vec<Detection<BoundingBox>> = vec![
             Detection {
-                annotation: BoundingBox::new(0_f32, 0_f32, 3_f32, 3_f32, "test".to_string())
+                annotation: BoundingBox::new(0_f32, 0_f32, 4_f32, 4_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.6_f32,
             },
@@ -214,11 +219,6 @@ mod tests {
                 annotation: BoundingBox::new(0_f32, 0_f32, 5_f32, 5_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.55_f32,
-            },
-            Detection {
-                annotation: BoundingBox::new(2_f32, 2_f32, 4_f32, 4_f32, "test".to_string())
-                    .unwrap(),
-                confidence: 0.8_f32,
             },
             Detection {
                 annotation: BoundingBox::new(6_f32, 6_f32, 10_f32, 10_f32, "test".to_string())
@@ -229,23 +229,24 @@ mod tests {
         let nms_result = non_maximum_suppression(dets, 0.5_f32);
         let true_dets: Vec<Detection<BoundingBox>> = vec![
             Detection {
-                annotation: BoundingBox::new(2_f32, 2_f32, 4_f32, 4_f32, "test".to_string())
-                    .unwrap(),
-                confidence: 0.8_f32,
-            },
-            Detection {
                 annotation: BoundingBox::new(6_f32, 6_f32, 10_f32, 10_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.75_f32,
             },
+            Detection {
+                annotation: BoundingBox::new(0_f32, 0_f32, 4_f32, 4_f32, "test".to_string())
+                    .unwrap(),
+                confidence: 0.6_f32,
+            }
         ];
         assert_eq!(true_dets, nms_result);
     }
-
+    
+    #[test]
     fn nms_overlap_but_different_classes() {
         let dets: Vec<Detection<BoundingBox>> = vec![
             Detection {
-                annotation: BoundingBox::new(0_f32, 0_f32, 3_f32, 3_f32, "test".to_string())
+                annotation: BoundingBox::new(0_f32, 0_f32, 4.5_f32, 4.5_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.6_f32,
             },
@@ -261,7 +262,7 @@ mod tests {
                 confidence: 0.55_f32,
             },
             Detection {
-                annotation: BoundingBox::new(2_f32, 2_f32, 4_f32, 4_f32, "test".to_string())
+                annotation: BoundingBox::new(0.5_f32, 0.5_f32, 4_f32, 4_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.8_f32,
             },
@@ -274,7 +275,7 @@ mod tests {
         let nms_result = non_maximum_suppression(dets, 0.5_f32);
         let true_dets: Vec<Detection<BoundingBox>> = vec![
             Detection {
-                annotation: BoundingBox::new(2_f32, 2_f32, 4_f32, 4_f32, "test".to_string())
+                annotation: BoundingBox::new(0.5_f32, 0.5_f32, 4_f32, 4_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.8_f32,
             },
