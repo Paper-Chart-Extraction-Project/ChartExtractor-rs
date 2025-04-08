@@ -51,7 +51,10 @@ impl fmt::Display for TilingError {
             } => {
                 write!(
                     f,
-                    "Failed to tile image, overlap proportion does not evenly divide tile size."
+                    "Failed to tile image, overlap proportion ({}) does not evenly divide \
+                    tile size ({}).",
+                    overlap_proportion,
+                    tile_size
                 )
             }
             TilingError::UnevenImageDivision {
@@ -62,8 +65,12 @@ impl fmt::Display for TilingError {
             } => {
                 write!(
                     f,
-                    "Failed to tile image, the tiles do not evenly divide the image given the \
-                    overlap proportion.",
+                    "Failed to tile image, the tile size ({}) does not evenly divide the image's\
+                    width ({}) and height ({}) given the overlap proportion ({}).",
+                    tile_size,
+                    image_width,
+                    image_height,
+                    overlap_proportion
                 )
             }
         }
@@ -76,6 +83,12 @@ pub enum OverlapProportion {
     OneThird = 3,
     OneFourth = 4,
     OneFifth = 5,
+}
+
+impl fmt::Display for OverlapProportion {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "1/{}", *self as u32)
+    }
 }
 
 pub fn validate_tiling_parameters(
