@@ -148,6 +148,9 @@ pub fn tile_image(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::image_utils::image_conversion::convert_array_view_to_rgb_image;
+    use crate::image_utils::image_io::{read_image_as_array4, read_image_as_rgb8};
+    use std::path::Path;
 
     #[test]
     fn tile_with_invalid_tile_size_for_width() {
@@ -232,5 +235,23 @@ mod tests {
                 overlap_proportion: OverlapProportion::OneHalf
             })
         );
+    }
+
+    #[test]
+    fn test_tiling() {
+        let img = read_image_as_array4(Path::new("./data/test_data/test_image.png"));
+        let tiles = tile_image(&img, 2, OverlapProportion::OneHalf).unwrap();
+        for (row_ix, row) in tiles.iter().enumerate() {
+            for (col_ix, tile) in row.iter().enumerate() {
+                let rgb_tile = convert_array_view_to_rgb_image(*tile);
+                let filepath_to_true_tile = format!(
+                    "./data/test_data/test_image_tile_{row}_{col}.png",
+                    row = row_ix,
+                    col = col_ix
+                );
+                let true_rgb_tile = read_image_as_rgb8(Path::new(&filepath_to_true_tile));
+                assert_eq!(rgb_tile, true_rgb_tile);
+            }
+        }
     }
 }
