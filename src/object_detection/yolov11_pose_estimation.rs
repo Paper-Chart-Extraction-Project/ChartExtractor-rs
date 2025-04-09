@@ -1,4 +1,5 @@
-use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
+use crate::annotations::bounding_box::BoundingBoxGeometry;
+use crate::annotations::bounding_box_with_keypoint::BoundingBoxWithKeypoint;
 use crate::annotations::detection::Detection;
 use crate::object_detection::object_detection_model::ObjectDetectionModel;
 use crate::object_detection::ort_inference_session::OrtInferenceSession;
@@ -31,5 +32,59 @@ impl Yolov11PoseEstimation {
             input_height,
             model_name,
         })
+    }
+}
+
+impl ObjectDetectionModel<BoundingBoxWithKeypoint> for Yolov11PoseEstimation {
+    fn run_inference(
+        &self,
+        input_array: ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>,
+        confidence: f32,
+    ) -> Vec<Detection<BoundingBoxWithKeypoint>> {
+        let outputs: SessionOutputs = self
+            .ort_session
+            .session
+            .run(inputs!["images" => input_array].unwrap())
+            .unwrap();
+        let output = outputs["output0"].try_extract_tensor::<f32>().unwrap();
+        let output = output.t();
+        let mut detections: Vec<Detection<BoundingBoxWithKeypoint>> = Vec::new();
+        for row in output.axis_iter(Axis(0)) {
+            let row: Vec<Detection<BoundingBoxWithKeypoint>> = row.iter().copied().collect();
+            let (class_id, prob) = row
+                .iter()
+                .skip(6) // skips bounding box coords.
+                .enumerate()
+                .map(|(index, value)| (index, *value))
+                .reduce(|accum, row| if row.1 > accum.1 { row } else { accum })
+                .unwrap();
+            if prob < confidence {
+                continue;
+            }
+            let label = match self.class_names.get(class_id) {
+                Some(v) => v,
+                None => &class_id.to_string(),
+            };
+            let x = row[0];
+            let y = row[1];
+            let w = row[2];
+            let h = row[3];
+            let kpx = row[4];
+            let kpy = row[5];
+            let bbox_wkp = BoundingBoxWithKeypoint::new(
+                x - (w / 2.0),
+                y - (h / 2.0),
+                x + (w / 2.0),
+                y + (h / 2.0),
+                kpx,
+                kpy,
+                label.to_string(),
+            );
+            detections.push(Detection {
+                annotation: bbox_wkp.unwrap(),
+                confidence: prob,
+            });
+        }
+        detections
     }
 }
