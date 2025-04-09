@@ -112,8 +112,8 @@ pub fn validate_tiling_parameters(
     }
     
     let stride: u32 = (tile_size*proportion.numerator) / proportion.denominator;
-    let tiles_fit_cleanly_laterally = image_width % stride == 0;
-    let tiles_fit_cleanly_vertically = image_height % stride == 0;
+    let tiles_fit_cleanly_laterally = (image_width - tile_size) % stride == 0;
+    let tiles_fit_cleanly_vertically = (image_height - tile_size) % stride == 0;
 
     if !tiles_fit_cleanly_laterally || !tiles_fit_cleanly_vertically {
         return Some(TilingError::UnevenImageDivision {
@@ -137,16 +137,16 @@ pub fn tile_image(
     if let Some(e) = validate_tiling_parameters(proportion, tile_size, image_width, image_height) {
         return Err(e);
     }
-    let mut tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> = Vec::new();
     let stride: u32 = (tile_size*proportion.numerator) / proportion.denominator;
-    let num_rows = image_height / stride;
-    let num_columns = image_width / stride;
+    let num_rows = ((image_height - tile_size) / stride) + 1;
+    let num_columns = ((image_width - tile_size) / stride) + 1;
 
-    for row_ix in 0..num_rows - 1 {
+    let mut tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> = Vec::new();
+    for row_ix in 0..num_rows {
         let mut row_of_tiles: Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>> = vec![];
         let start_row = (row_ix * stride) as usize;
         let end_row = start_row + (tile_size as usize);
-        for col_ix in 0..num_columns - 1 {
+        for col_ix in 0..num_columns {
             let start_col = (col_ix * stride) as usize;
             let end_col = start_col + (tile_size as usize);
             let tile = image.slice(s![.., .., start_row..end_row, start_col..end_col]);
@@ -164,7 +164,9 @@ mod tests {
     use crate::image_utils::image_io::{read_image_as_array4, read_image_as_rgb8};
     use std::path::Path;
     
-    const ONE_HALF: OverlapProportion = OverlapProportion { numerator: 1_u32, denominator: 2_u32};
+    const ONE_HALF: OverlapProportion = OverlapProportion { numerator: 1_u32, denominator: 2_u32 };
+    const TWO_FIFTHS: OverlapProportion = OverlapProportion { numerator: 2_u32, denominator: 5_u32 };
+    
     #[test]
     fn tile_with_invalid_tile_size_for_width() {
         let validation =
