@@ -20,9 +20,10 @@ impl OrtInferenceSession {
     }
 }
 
+#[derive(Debug)]
 pub enum Yolov11ModelType {
     ObjectDetection,
-    PoseEstimation
+    PoseEstimation,
 }
 
 pub struct Yolov11 {
@@ -53,7 +54,7 @@ impl Yolov11 {
             model_name,
         })
     }
-    
+
     /// This method does not take an array directly, but rather a view into an array.
     /// For our use case, we will be doing a lot of cropping images by making views
     /// into ndarray objects. The purpose of this is to be able to do tiled detection
@@ -78,8 +79,16 @@ impl Yolov11 {
         let output = output.t();
         let test_thing = self.run_inference_bbox_detection(output.clone(), confidence);
         let mut detections = match self.model_type {
-            Yolov11ModelType::ObjectDetection => self.run_inference_bbox_detection(output, confidence),
-            _ => {panic!();}
+            Yolov11ModelType::ObjectDetection => {
+                self.run_inference_bbox_detection(output, confidence)
+            }
+            _ => {
+                println!(
+                    "Detection not yet implemented for ModelType {:?}",
+                    self.model_type
+                );
+                panic!();
+            }
         };
         detections = non_maximum_suppression(detections, 0.5_f32);
         detections
@@ -173,7 +182,7 @@ pub fn tile_and_predict(
 ) -> Result<Vec<Detection<BoundingBox>>, TilingError> {
     let tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> =
         tile_image(&image_array, tile_size, overlap_proportion)?;
-    let stride: u32 = (tile_size*overlap_proportion.numerator) / overlap_proportion.denominator;
+    let stride: u32 = (tile_size * overlap_proportion.numerator) / overlap_proportion.denominator;
     let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
     for (row_ix, row_of_tiles) in tiles.iter().enumerate() {
         for (col_ix, tile) in row_of_tiles.iter().enumerate() {
@@ -226,7 +235,7 @@ mod tests {
         ];
         assert_eq!(true_dets, nms_result);
     }
-    
+
     #[test]
     fn nms_standard_usage() {
         let dets: Vec<Detection<BoundingBox>> = vec![
@@ -257,11 +266,11 @@ mod tests {
                 annotation: BoundingBox::new(0_f32, 0_f32, 4_f32, 4_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.6_f32,
-            }
+            },
         ];
         assert_eq!(true_dets, nms_result);
     }
-    
+
     #[test]
     fn nms_overlap_but_different_classes() {
         let dets: Vec<Detection<BoundingBox>> = vec![
