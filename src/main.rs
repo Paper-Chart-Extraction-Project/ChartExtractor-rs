@@ -1,9 +1,11 @@
 mod annotations;
 mod image_utils;
 mod object_detection;
+use annotations::bounding_box::BoundingBox;
 use image_utils::image_io::read_image_as_array4;
 use image_utils::tiling::OverlapProportion;
-use object_detection::yolov11::{Yolov11, read_classes_txt_file, tile_and_predict};
+use object_detection::object_detection_utils::{read_classes_txt_file, tile_and_predict};
+use object_detection::yolov11_bounding_box::Yolov11BoundingBox;
 use serde_json;
 use std::error::Error;
 use std::path::Path;
@@ -27,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         )
         .into());
     }
-    let model = Yolov11::new(
+    let model = Yolov11BoundingBox::new(
         model_path,
         read_classes_txt_file(classes_path).unwrap(),
         640,
@@ -37,11 +39,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     .unwrap();
     let img = read_image_as_array4(Path::new("./data/images/people_on_street.jpg"));
     let now = Instant::now();
-    let preds = tile_and_predict(
+    let preds: Vec<_> = tile_and_predict::<BoundingBox, Yolov11BoundingBox>(
         &model,
         img,
         640,
-        OverlapProportion { numerator: 1_u32, denominator: 2_u32 },
+        OverlapProportion {
+            numerator: 1_u32,
+            denominator: 2_u32,
+        },
         0.5_f32,
         0.1_f32,
     )
