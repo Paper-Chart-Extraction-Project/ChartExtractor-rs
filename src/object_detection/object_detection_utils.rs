@@ -3,8 +3,8 @@ use crate::annotations::detection::Detection;
 use crate::image_utils::tiling::{OverlapProportion, TilingError, tile_image};
 use crate::object_detection::object_detection_model::ObjectDetectionModel;
 use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
-use std::fs::File;
 use std::fmt::Display;
+use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
