@@ -1,7 +1,7 @@
 use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
 use crate::image_utils::tiling::{OverlapProportion, TilingError, tile_image};
-use ndarray::{ArrayBase, Axis, Dim, OwnedRepr, ViewRepr};
+use ndarray::{ArrayBase, Axis, Dim, IxDynImpl, OwnedRepr, ViewRepr};
 use ort::inputs;
 use ort::session::{Session, SessionOutputs};
 use std::fs::File;
@@ -53,7 +53,7 @@ impl Yolov11 {
             model_name,
         })
     }
-
+    
     /// This method does not take an array directly, but rather a view into an array.
     /// For our use case, we will be doing a lot of cropping images by making views
     /// into ndarray objects. The purpose of this is to be able to do tiled detection
@@ -76,9 +76,22 @@ impl Yolov11 {
             .unwrap();
         let output = outputs["output0"].try_extract_tensor::<f32>().unwrap();
         let output = output.t();
+        let test_thing = self.run_inference_bbox_detection(output.clone(), confidence);
+        let mut detections = match self.model_type {
+            Yolov11ModelType::ObjectDetection => self.run_inference_bbox_detection(output, confidence),
+            _ => {panic!();}
+        };
+        detections = non_maximum_suppression(detections, 0.5_f32);
+        detections
+    }
 
+    pub fn run_inference_bbox_detection(
+        &self,
+        ort_session_output: ArrayBase<ViewRepr<&f32>, Dim<IxDynImpl>>,
+        confidence: f32,
+    ) -> Vec<Detection<BoundingBox>> {
         let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
-        for row in output.axis_iter(Axis(0)) {
+        for row in ort_session_output.axis_iter(Axis(0)) {
             let row: Vec<_> = row.iter().copied().collect();
             let (class_id, prob) = row
                 .iter()
@@ -110,7 +123,6 @@ impl Yolov11 {
                 confidence: prob,
             });
         }
-        detections = non_maximum_suppression(detections, 0.5_f32);
         detections
     }
 }
