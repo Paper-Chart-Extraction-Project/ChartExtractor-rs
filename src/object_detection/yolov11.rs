@@ -20,11 +20,17 @@ impl OrtInferenceSession {
     }
 }
 
+pub enum Yolov11ModelType {
+    ObjectDetection,
+    PoseEstimation
+}
+
 pub struct Yolov11 {
     ort_session: OrtInferenceSession,
     class_names: Vec<String>,
     input_width: usize,
     input_height: usize,
+    model_type: Yolov11ModelType,
     model_name: String,
 }
 
@@ -34,6 +40,7 @@ impl Yolov11 {
         class_names: Vec<String>,
         input_width: usize,
         input_height: usize,
+        model_type: Yolov11ModelType,
         model_name: String,
     ) -> ort::Result<Self> {
         let ort_session = OrtInferenceSession::new(model_path)?;
@@ -42,6 +49,7 @@ impl Yolov11 {
             class_names,
             input_width,
             input_height,
+            model_type,
             model_name,
         })
     }
