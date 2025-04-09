@@ -41,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         &model,
         img,
         640,
-        OverlapProportion::OneHalf,
+        OverlapProportion { numerator: 1_u32, denominator: 2_u32 },
         0.5_f32,
         0.1_f32,
     )
