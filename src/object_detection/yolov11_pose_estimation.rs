@@ -50,7 +50,7 @@ impl ObjectDetectionModel<BoundingBoxWithKeypoint> for Yolov11PoseEstimation {
         let output = output.t();
         let mut detections: Vec<Detection<BoundingBoxWithKeypoint>> = Vec::new();
         for row in output.axis_iter(Axis(0)) {
-            let row: Vec<Detection<BoundingBoxWithKeypoint>> = row.iter().copied().collect();
+            let row: Vec<f32> = row.iter().copied().collect();
             let (class_id, prob) = row
                 .iter()
                 .skip(6) // skips bounding box coords.

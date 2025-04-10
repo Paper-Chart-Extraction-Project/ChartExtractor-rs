@@ -49,7 +49,7 @@ impl ObjectDetectionModel<BoundingBox> for Yolov11BoundingBox {
         let output = output.t();
         let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
         for row in output.axis_iter(Axis(0)) {
-            let row: Vec<_> = row.iter().copied().collect();
+            let row: Vec<f32> = row.iter().copied().collect();
             let (class_id, prob) = row
                 .iter()
                 .skip(4) // skips bounding box coords.
