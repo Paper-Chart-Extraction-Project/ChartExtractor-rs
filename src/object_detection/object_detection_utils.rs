@@ -1,118 +1,21 @@
 use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
 use crate::image_utils::tiling::{OverlapProportion, TilingError, tile_image};
-use ndarray::{ArrayBase, Axis, Dim, OwnedRepr, ViewRepr};
-use ort::inputs;
-use ort::session::{Session, SessionOutputs};
+use crate::object_detection::object_detection_model::ObjectDetectionModel;
+use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr};
+use std::fmt::Display;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
-/// An onnxruntime inference session.
-pub struct OrtInferenceSession {
-    session: Session,
-}
-
-impl OrtInferenceSession {
-    pub fn new(model_path: &Path) -> ort::Result<Self> {
-        let session = Session::builder()?.commit_from_file(model_path)?;
-        Ok(Self { session })
-    }
-}
-
-pub struct Yolov11 {
-    ort_session: OrtInferenceSession,
-    class_names: Vec<String>,
-    input_width: usize,
-    input_height: usize,
-    model_name: String,
-}
-
-impl Yolov11 {
-    pub fn new(
-        model_path: &Path,
-        class_names: Vec<String>,
-        input_width: usize,
-        input_height: usize,
-        model_name: String,
-    ) -> ort::Result<Self> {
-        let ort_session = OrtInferenceSession::new(model_path)?;
-        Ok(Yolov11 {
-            ort_session,
-            class_names,
-            input_width,
-            input_height,
-            model_name,
-        })
-    }
-
-    /// This method does not take an array directly, but rather a view into an array.
-    /// For our use case, we will be doing a lot of cropping images by making views
-    /// into ndarray objects. The purpose of this is to be able to do tiled detection
-    /// on an image without making copies.
-    ///
-    /// image.slice(s![.., .., start_row..end_row, start_col..end_col])
-    /// where image is an ndarray with dimensions (1, 3, image_width, image_height).
-    ///
-    /// If you want to reuse this and skip the view making process, changing ViewRepr<f32>
-    /// to OwnedRepr<f32> will likely work.
-    pub fn run_inference(
-        &self,
-        input_array: ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>,
-        confidence: f32,
-    ) -> Vec<Detection<BoundingBox>> {
-        let outputs: SessionOutputs = self
-            .ort_session
-            .session
-            .run(inputs!["images" => input_array].unwrap())
-            .unwrap();
-        let output = outputs["output0"].try_extract_tensor::<f32>().unwrap();
-        let output = output.t();
-
-        let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
-        for row in output.axis_iter(Axis(0)) {
-            let row: Vec<_> = row.iter().copied().collect();
-            let (class_id, prob) = row
-                .iter()
-                .skip(4) // skips bounding box coords.
-                .enumerate()
-                .map(|(index, value)| (index, *value))
-                .reduce(|accum, row| if row.1 > accum.1 { row } else { accum })
-                .unwrap();
-            if prob < confidence {
-                continue;
-            }
-            let label = match self.class_names.get(class_id) {
-                Some(v) => v,
-                None => &class_id.to_string(),
-            };
-            let x = row[0];
-            let y = row[1];
-            let w = row[2];
-            let h = row[3];
-            let bbox = BoundingBox::new(
-                x - (w / 2.0),
-                y - (h / 2.0),
-                x + (w / 2.0),
-                y + (h / 2.0),
-                label.to_string(),
-            );
-            detections.push(Detection {
-                annotation: bbox.unwrap(),
-                confidence: prob,
-            });
-        }
-        detections = non_maximum_suppression(detections, 0.5_f32);
-        detections
-    }
-}
-
+/// Reads a file with the class names into a vector so that the number ids
+/// which come directly from the ORT inference session can be given meaning.
 pub fn read_classes_txt_file(filepath: &Path) -> io::Result<Vec<String>> {
     BufReader::new(File::open(filepath)?).lines().collect()
 }
 
 /// Non maxmimum suppression is a way of removing duplicate detections.
-pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
+pub fn non_maximum_suppression<T: BoundingBoxGeometry + Display>(
     mut detections: Vec<Detection<T>>,
     iou_threshold: f32,
 ) -> Vec<Detection<T>> {
@@ -143,18 +46,18 @@ pub fn non_maximum_suppression<T: BoundingBoxGeometry + std::fmt::Display>(
 ///
 /// Tiles an image, predicts on each tile, then corrects the detection's coordinates and
 /// applies NMS to them.
-pub fn tile_and_predict(
-    model: &Yolov11,
+pub fn tile_and_predict<T: BoundingBoxGeometry + Display, U: ObjectDetectionModel<T>>(
+    model: &U,
     image_array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     tile_size: u32,
     overlap_proportion: OverlapProportion,
     confidence: f32,
     nms_iou_threshold: f32,
-) -> Result<Vec<Detection<BoundingBox>>, TilingError> {
+) -> Result<Vec<Detection<T>>, TilingError> {
     let tiles: Vec<Vec<ArrayBase<ViewRepr<&f32>, Dim<[usize; 4]>>>> =
         tile_image(&image_array, tile_size, overlap_proportion)?;
-    let stride: u32 = (tile_size*overlap_proportion.numerator) / overlap_proportion.denominator;
-    let mut detections: Vec<Detection<BoundingBox>> = Vec::new();
+    let stride: u32 = (tile_size * overlap_proportion.numerator) / overlap_proportion.denominator;
+    let mut detections: Vec<Detection<T>> = Vec::new();
     for (row_ix, row_of_tiles) in tiles.iter().enumerate() {
         for (col_ix, tile) in row_of_tiles.iter().enumerate() {
             let preds = model.run_inference(*tile, confidence);
@@ -206,7 +109,7 @@ mod tests {
         ];
         assert_eq!(true_dets, nms_result);
     }
-    
+
     #[test]
     fn nms_standard_usage() {
         let dets: Vec<Detection<BoundingBox>> = vec![
@@ -237,11 +140,11 @@ mod tests {
                 annotation: BoundingBox::new(0_f32, 0_f32, 4_f32, 4_f32, "test".to_string())
                     .unwrap(),
                 confidence: 0.6_f32,
-            }
+            },
         ];
         assert_eq!(true_dets, nms_result);
     }
-    
+
     #[test]
     fn nms_overlap_but_different_classes() {
         let dets: Vec<Detection<BoundingBox>> = vec![
