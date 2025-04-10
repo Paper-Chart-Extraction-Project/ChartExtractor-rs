@@ -54,7 +54,7 @@ impl ObjectDetectionModel<BoundingBoxWithKeypoint> for Yolov11PoseEstimation {
             println!("Row: {:?}", row);
             let class_id = 0;
             let prob = row[4];
-            
+
             if prob < confidence {
                 continue;
             }
