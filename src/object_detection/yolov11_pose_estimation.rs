@@ -51,13 +51,10 @@ impl ObjectDetectionModel<BoundingBoxWithKeypoint> for Yolov11PoseEstimation {
         let mut detections: Vec<Detection<BoundingBoxWithKeypoint>> = Vec::new();
         for row in output.axis_iter(Axis(0)) {
             let row: Vec<f32> = row.iter().copied().collect();
-            let (class_id, prob) = row
-                .iter()
-                .skip(6) // skips bounding box coords.
-                .enumerate()
-                .map(|(index, value)| (index, *value))
-                .reduce(|accum, row| if row.1 > accum.1 { row } else { accum })
-                .unwrap();
+            println!("Row: {:?}", row);
+            let class_id = 0;
+            let prob = row[4];
+            
             if prob < confidence {
                 continue;
             }
@@ -69,8 +66,10 @@ impl ObjectDetectionModel<BoundingBoxWithKeypoint> for Yolov11PoseEstimation {
             let y = row[1];
             let w = row[2];
             let h = row[3];
-            let kpx = row[4];
-            let kpy = row[5];
+            let kpx = row[5];
+            let kpy = row[6];
+            let _ = row[7]; //Keypoint probability.
+
             let bbox_wkp = BoundingBoxWithKeypoint::new(
                 x - (w / 2.0),
                 y - (h / 2.0),
