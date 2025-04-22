@@ -23,9 +23,10 @@ impl TpsTransform {
         kernel_vec.push(p.y);
         let kernel_vec = Array::from_shape_vec((1, kernel_vec.len()), kernel_vec).unwrap();
         let out = kernel_vec.dot(&w_matrix);
-        println!("{:?}", out);
-        //println!("{:?}", out.index_axis(Axis(1), 0));
-        Point{ x: 0_f32, y: 0_f32 }
+        let new_x = out.index_axis(Axis(1), 0).to_vec()[0];
+        let new_y = out.index_axis(Axis(1), 1).to_vec()[0];
+        println!("{:?}, {:?}", new_x, new_y);
+        Point{ x: new_x, y: new_y }
     }
 
     fn _create_l_matrix(&self) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
@@ -292,8 +293,7 @@ mod tests {
     fn test_tranform_point() {
         let test_transf = create_testing_transform();
         let transformed_point = test_transf.transform_point(Point { x: 2.0, y: 2.0 });
-        let true_transformed_point = Array::from_shape_vec((1, 2), vec![1.5, 2.0]);
-        assert!(false);
-        //assert!(transformed_point.eq(&true_transformed_point));
+        let true_transformed_point = Point{ x: 1.5, y: 2.0 };
+        assert_eq!(transformed_point, true_transformed_point);
     }
 }
