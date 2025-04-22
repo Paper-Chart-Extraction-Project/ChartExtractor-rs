@@ -26,12 +26,9 @@ impl TpsTransform {
         kernel_vec.push(p.x);
         kernel_vec.push(p.y);
         let kernel_vec = Array::from_shape_vec((1, kernel_vec.len()), kernel_vec).unwrap();
-        println!("Kernel vec: {:?}", kernel_vec);
         let out = kernel_vec.dot(&self.w_matrix);
-        println!("Out: {:?}", out);
         let new_x = out.index_axis(Axis(1), 0).to_vec()[0];
         let new_y = out.index_axis(Axis(1), 1).to_vec()[0];
-        println!("New x: {:?}, New y: {:?}", new_x, new_y);
         Point { x: new_x, y: new_y }
     }
 }
@@ -405,8 +402,6 @@ mod tests {
         let w_matrix = solve_for_w_matrix(&test_transf.source, &test_transf.destination);
         let l_matrix = create_l_matrix(&test_transf.source, &test_transf.destination);
         let b_matrix = create_b_matrix(&test_transf.destination);
-        println!("{:?}", w_matrix);
-        println!("{:?}", l_matrix.dot(&w_matrix));
         assert!(l_matrix.dot(&w_matrix).abs_diff_eq(&b_matrix, 0.0001));
     }
 
