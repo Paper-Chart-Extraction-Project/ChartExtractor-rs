@@ -3,7 +3,7 @@ use image::{Rgb, RgbImage};
 use imageproc::geometric_transformations::{Interpolation, Projection, warp};
 
 
-pub fn homography_transform(
+pub fn homography_transform_image(
     image: RgbImage,
     source_points: Vec<Point>,
     destination_points: Vec<Point>
