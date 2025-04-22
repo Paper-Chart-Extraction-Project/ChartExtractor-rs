@@ -14,7 +14,11 @@ pub struct TpsTransform {
 impl TpsTransform {
     pub fn new(source: Vec<Point>, destination: Vec<Point>) -> TpsTransform {
         let w_matrix = solve_for_w_matrix(&source, &destination); // Cached for performance.
-        TpsTransform { source, destination, w_matrix }
+        TpsTransform {
+            source,
+            destination,
+            w_matrix,
+        }
     }
 
     pub fn transform_point(&self, p: Point) -> Point {
@@ -91,7 +95,7 @@ fn kernel(p1: &Point, p2: &Point) -> f32 {
     let dist = euclidean_distance(&p1, &p2);
     match dist {
         0.0 => 0.0,
-        _ => dist.powi(2) * dist.ln()
+        _ => dist.powi(2) * dist.ln(),
     }
 }
 
