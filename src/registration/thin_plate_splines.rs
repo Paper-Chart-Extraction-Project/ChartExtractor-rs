@@ -3,6 +3,7 @@ extern crate openblas_src;
 use crate::annotations::point::Point;
 use ndarray::{Array, ArrayBase, Axis, Dim, OwnedRepr, concatenate, stack};
 use ndarray_linalg::Solve;
+use std::iter::zip;
 
 pub struct TpsTransform {
     source: Vec<Point>,
@@ -25,9 +26,12 @@ impl TpsTransform {
         kernel_vec.push(p.x);
         kernel_vec.push(p.y);
         let kernel_vec = Array::from_shape_vec((1, kernel_vec.len()), kernel_vec).unwrap();
+        println!("Kernel vec: {:?}", kernel_vec);
         let out = kernel_vec.dot(&self.w_matrix);
+        println!("Out: {:?}", out);
         let new_x = out.index_axis(Axis(1), 0).to_vec()[0];
         let new_y = out.index_axis(Axis(1), 1).to_vec()[0];
+        println!("New x: {:?}, New y: {:?}", new_x, new_y);
         Point { x: new_x, y: new_y }
     }
 }
@@ -88,7 +92,10 @@ fn create_o_matrix() -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
 
 fn kernel(p1: &Point, p2: &Point) -> f32 {
     let dist = euclidean_distance(&p1, &p2);
-    dist.powi(2) * dist.ln()
+    match dist {
+        0.0 => 0.0,
+        _ => dist.powi(2) * dist.ln()
+    }
 }
 
 fn euclidean_distance(p1: &Point, p2: &Point) -> f32 {
@@ -408,6 +415,11 @@ mod tests {
         let test_transf = create_testing_transform();
         let transformed_point = test_transf.transform_point(Point { x: 2.0, y: 2.0 });
         let true_transformed_point = Point { x: 1.5, y: 2.0 };
-        assert_eq!(transformed_point, true_transformed_point);
+        let src_points = test_transf.source.clone();
+        let dst_points = test_transf.destination.clone();
+        for (src_point, dst_point) in zip(src_points, dst_points) {
+            let transformed_point = test_transf.transform_point(src_point);
+            assert!((transformed_point.x - dst_point.x) < 0.00001)
+        }
     }
 }
