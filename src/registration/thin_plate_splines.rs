@@ -101,8 +101,8 @@ fn create_b_matrix(destination: &[Point]) -> ArrayBase<OwnedRepr<f32>, Dim<[usiz
         b_values.push(point.x);
         b_values.push(point.y);
     }
-    let ZEROS_TO_ADD = 6;
-    for _ in 0..ZEROS_TO_ADD {
+    let zeros_to_add = 6;
+    for _ in 0..zeros_to_add {
         b_values.push(0_f32);
     }
     Array::from_shape_vec((destination.len() + 3, 2), b_values).unwrap()
