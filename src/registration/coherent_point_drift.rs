@@ -15,7 +15,7 @@ struct CoherentPointDriftTransform {
     sigma2: f32,
     num_target_points: usize,
     num_source_points: usize,
-    D: usize,
+    dimensions: usize,
     tolerance: f32,
     w: f32,
     max_iterations: u32,
@@ -58,7 +58,7 @@ impl CoherentPointDriftTransform {
             sigma2: initialize_sigma2(&X, &Y),
             num_target_points: num_target_points,
             num_source_points: num_source_points,
-            D: dimensions,
+            dimensions: dimensions,
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
@@ -106,7 +106,7 @@ impl CoherentPointDriftTransform {
         let mut P = ((compute_diff(&self.X, &self.TY)).powi(2)).sum_axis(Axis(2));
         P = (-P/(2_f32*self.sigma2)).exp();
         let c = {
-            let left = (2.0*PI*self.sigma2).powf((self.D as f32)/2.0);
+            let left = (2.0*PI*self.sigma2).powf((self.dimensions as f32)/2.0);
             let right = self.w/(1.0-self.w)*(self.num_source_points as f32)/(self.num_target_points as f32);
             left * right
         };
@@ -143,7 +143,7 @@ impl CoherentPointDriftTransform {
         let yPy = self.P1.clone().t().dot(&self.TY.clone().powi(2).sum_axis(Axis(1)));
         let trPXY = (self.TY.clone()*self.PX.clone()).sum();
 
-        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (self.Np * self.D as f32);
+        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (self.Np * self.dimensions as f32);
         if self.sigma2 <= 0.0 {
             self.sigma2 = self.tolerance / 10.0;
         }
@@ -184,11 +184,11 @@ fn initialize_sigma2(
     Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
 ) -> f32 {
     let num_target_points = X.dim().0 as f32;
-    let D = X.dim().1 as f32;
+    let dimensions = X.dim().1 as f32;
     let num_source_points = Y.dim().0 as f32;
     let diff = compute_diff(X, Y);
     let err = diff.powi(2);
-    err.sum()/(D*num_target_points*num_source_points)
+    err.sum()/(dimensions*num_target_points*num_source_points)
 }
 
 fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
