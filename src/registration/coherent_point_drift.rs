@@ -9,7 +9,7 @@ use std::f32::EPSILON;
 struct CoherentPointDriftTransform {
     X: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     Y: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    alpha: f32,
+    lambda: f32,
     beta: f32,
     TY: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     sigma2: f32,
@@ -38,7 +38,7 @@ impl CoherentPointDriftTransform {
     pub fn new(
         X: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
         Y: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-        alpha: f32,
+        lambda: f32,
         beta: f32,
         w: Option<f32>,
         tolerance: Option<f32>,
@@ -72,7 +72,7 @@ impl CoherentPointDriftTransform {
         CoherentPointDriftTransform {
             X: X.clone(),
             Y: Y.clone(),
-            alpha: alpha,
+            lambda: lambda,
             beta: beta,
             TY: Y.clone(),
             sigma2: initialize_sigma2(&X, &Y),
@@ -149,7 +149,7 @@ impl CoherentPointDriftTransform {
     fn update_transform(&mut self) {
         let A = {
             let left_term = Array::from_diag(&self.P1.clone()).dot(&self.G.clone());
-            let right_term = self.alpha * self.sigma2 * Array::eye(self.M.clone());
+            let right_term = self.lambda * self.sigma2 * Array::eye(self.M.clone());
             left_term + right_term
         };
         let B = self.PX.clone() - Array::from_diag(&self.P1.clone()).dot(&self.Y.clone());
