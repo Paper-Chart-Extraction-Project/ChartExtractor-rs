@@ -13,8 +13,8 @@ struct CoherentPointDriftTransform {
     beta: f32,
     TY: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     sigma2: f32,
-    N: usize,
-    M: usize,
+    num_target_points: usize,
+    num_source_points: usize,
     D: usize,
     tolerance: f32,
     w: f32,
@@ -76,8 +76,8 @@ impl CoherentPointDriftTransform {
             beta: beta,
             TY: Y.clone(),
             sigma2: initialize_sigma2(&X, &Y),
-            N: num_target_points,
-            M: num_source_points,
+            num_target_points: num_target_points,
+            num_source_points: num_source_points,
             D: dimensions,
             tolerance: tolerance,
             w: w,
@@ -127,7 +127,7 @@ impl CoherentPointDriftTransform {
         P = (-P/(2_f32*self.sigma2)).exp();
         let c = {
             let left = (2.0*PI*self.sigma2).powf((self.D as f32)/2.0);
-            let right = self.w/(1.0-self.w)*(self.M as f32)/(self.N as f32);
+            let right = self.w/(1.0-self.w)*(self.num_source_points as f32)/(self.num_target_points as f32);
             left * right
         };
         let mut den = P.sum_axis(Axis(0));
@@ -149,7 +149,7 @@ impl CoherentPointDriftTransform {
     fn update_transform(&mut self) {
         let A = {
             let left_term = Array::from_diag(&self.P1.clone()).dot(&self.G.clone());
-            let right_term = self.lambda * self.sigma2 * Array::eye(self.M.clone());
+            let right_term = self.lambda * self.sigma2 * Array::eye(self.num_source_points.clone());
             left_term + right_term
         };
         let B = self.PX.clone() - Array::from_diag(&self.P1.clone()).dot(&self.Y.clone());
@@ -203,12 +203,12 @@ fn initialize_sigma2(
     X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
 ) -> f32 {
-    let N = X.dim().0 as f32;
+    let num_target_points = X.dim().0 as f32;
     let D = X.dim().1 as f32;
-    let M = Y.dim().0 as f32;
+    let num_source_points = Y.dim().0 as f32;
     let diff = compute_diff(X, Y);
     let err = diff.powi(2);
-    err.sum()/(D*N*M)
+    err.sum()/(D*num_target_points*num_source_points)
 }
 
 fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
