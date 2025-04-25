@@ -49,26 +49,6 @@ impl CoherentPointDriftTransform {
         let num_target_points: usize = X.dim().0;
         let dimensions: usize = X.dim().1;
         let num_source_points: usize = Y.dim().0;
-        let tolerance = match tolerance {
-            Some(v) => v,
-            None => 0.001
-        };
-        let max_iterations = match max_iterations {
-            Some(v) => v,
-            None => 100
-        };
-        let w = match w {
-            Some(v) => v,
-            None => 0.0
-        };
-        let num_eig = match num_eig {
-            Some(v) => v,
-            None => 100
-        };
-        let debug = match debug {
-            Some(v) => v,
-            None => false
-        };
         CoherentPointDriftTransform {
             X: X.clone(),
             Y: Y.clone(),
@@ -79,9 +59,9 @@ impl CoherentPointDriftTransform {
             num_target_points: num_target_points,
             num_source_points: num_source_points,
             D: dimensions,
-            tolerance: tolerance,
-            w: w,
-            max_iterations: max_iterations,
+            tolerance: tolerance.unwrap_or(0.001),
+            w: w.unwrap_or(0.0),
+            max_iterations: max_iterations.unwrap_or(100),
             iteration: 0,
             diff: f32::MAX,
             q: f32::MAX,
@@ -92,9 +72,9 @@ impl CoherentPointDriftTransform {
             Np: 0.0,
             W: Array::zeros((num_source_points, dimensions)),
             G: gaussian_kernel(&Y, &Y, beta),
-            num_eig: num_eig,
+            num_eig: num_eig.unwrap_or(100),
             history: Vec::new(),
-            debug: debug
+            debug: debug.unwrap_or(false)
         }
     }
 
