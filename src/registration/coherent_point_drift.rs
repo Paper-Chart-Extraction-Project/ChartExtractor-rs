@@ -174,6 +174,7 @@ fn compute_diff(
     X_3d - Y_3d
 }
 
+/// Computes the gaussian kernel for CPD.
 fn gaussian_kernel(
     X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
@@ -185,6 +186,7 @@ fn gaussian_kernel(
     (-diff / (2.0 * beta.powi(2))).exp()
 }
 
+/// Initializes sigma squared.
 fn initialize_sigma2(
     X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
@@ -197,6 +199,8 @@ fn initialize_sigma2(
     err.sum() / (dimensions * num_target_points * num_source_points)
 }
 
+
+/// A helper function for converting a 2d array into a string representation.
 fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
     let mut arr_str = String::from("[");
     let arr = arr.clone();
@@ -216,6 +220,11 @@ fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
     arr_str
 }
 
+/// Computes the solution for a matrix equation AX = B.
+///
+/// Goes column by column through B to find the vector that
+/// solves that equation and then contatenates all the solution
+/// vectors as columns in the resulting matrix.
 fn solve_matrices(
     A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
