@@ -17,7 +17,7 @@ struct CoherentPointDriftTransform {
     w: f32,
     max_iterations: u32,
     change_in_variance: f32,
-    P: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     num_eig: u32,
     history: Vec<String>, // Contains all the TY matrices for all iterations for debugging.
@@ -50,7 +50,7 @@ impl CoherentPointDriftTransform {
             w: w.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
             change_in_variance: f32::MAX,
-            P: Array::zeros((num_source_points, num_target_points)),
+            probability_of_match: Array::zeros((num_source_points, num_target_points)),
             W: Array::zeros((num_source_points, dimensions)),
             num_eig: num_eig.unwrap_or(100),
             history: Vec::new(),
@@ -87,13 +87,13 @@ impl CoherentPointDriftTransform {
         let mut den = P.sum_axis(Axis(0));
         den = den.mapv(|v| if v == 0.0 { f32::EPSILON + c } else { v + c });
 
-        self.P = P.clone() / den;
+        self.probability_of_match = P.clone() / den;
     }
 
     fn maximization(&mut self) {
-        let P1 = self.P.clone().sum_axis(Axis(1));
-        let Pt1 = self.P.clone().sum_axis(Axis(0));
-        let PX = self.P.clone().dot(&self.X);
+        let P1 = self.probability_of_match.clone().sum_axis(Axis(1));
+        let Pt1 = self.probability_of_match.clone().sum_axis(Axis(0));
+        let PX = self.probability_of_match.clone().dot(&self.X);
         let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
 
         self.update_transform(&P1, &PX, &G);
