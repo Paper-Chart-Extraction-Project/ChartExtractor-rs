@@ -179,7 +179,7 @@ fn transform_point_cloud(
     G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    Y.clone() + G.clone().dot(&W.clone())
+    Y + G.dot(W)
 }
 
 fn update_transform(
