@@ -99,26 +99,10 @@ impl CoherentPointDriftTransform {
         let Pt1 = self.probability_of_match.clone().sum_axis(Axis(0));
         let PX = self.probability_of_match.clone().dot(&self.X);
         let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
-
-        self.update_transform(&P1, &PX, &G);
+        
+        self.W = update_transform(&self.Y, &P1, &PX, &G, self.lambda, self.variance);
         self.TY = transform_point_cloud(&self.Y, &G, &self.W);
         self.update_variance(&P1, &Pt1, &PX);
-    }
-
-    fn update_transform(
-        &mut self,
-        P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-        PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-        G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    ) {
-        let A = {
-            let num_source_points: usize = self.Y.dim().0;
-            let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
-            let right_term = self.lambda * self.variance * Array::eye(num_source_points.clone());
-            left_term + right_term
-        };
-        let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
-        self.W = solve_matrices(&A, &B);
     }
 
     fn update_variance(
@@ -196,6 +180,24 @@ fn transform_point_cloud(
     W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     Y.clone() + G.clone().dot(&W.clone())
+}
+
+fn update_transform(
+    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    lambda: f32,
+    variance: f32
+) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    let A = {
+        let num_source_points: usize = Y.dim().0;
+        let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
+        let right_term = lambda * variance * Array::eye(num_source_points.clone());
+        left_term + right_term
+    };
+    let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&Y.clone());
+    solve_matrices(&A, &B)
 }
 
 /// A helper function for converting a 2d array into a string representation.
