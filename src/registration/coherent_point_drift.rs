@@ -19,7 +19,6 @@ struct CoherentPointDriftTransform {
     change_in_variance: f32,
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    num_eig: u32,
     history: Vec<String>, // Contains all the TY matrices for all iterations for debugging.
     debug: bool,          // Whether or not to take a history.
 }
@@ -33,7 +32,6 @@ impl CoherentPointDriftTransform {
         w: Option<f32>,
         tolerance: Option<f32>,
         max_iterations: Option<u32>,
-        num_eig: Option<u32>,
         debug: Option<bool>,
     ) -> CoherentPointDriftTransform {
         let num_target_points: usize = X.dim().0;
@@ -52,7 +50,6 @@ impl CoherentPointDriftTransform {
             change_in_variance: f32::MAX,
             probability_of_match: Array::zeros((num_source_points, num_target_points)),
             W: Array::zeros((num_source_points, dimensions)),
-            num_eig: num_eig.unwrap_or(100),
             history: Vec::new(),
             debug: debug.unwrap_or(false),
         }
