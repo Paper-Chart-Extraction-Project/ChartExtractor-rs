@@ -23,15 +23,11 @@ struct CoherentPointDriftTransform {
     diff: f32,
     q: f32,
     P: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Pt1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-    P1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-    PX: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Np: f32,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     G: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     num_eig: u32,
-    history: Vec<String>,
-    debug: bool,
+    history: Vec<String>, // Contains all the TY matrices for all iterations for debugging.
+    debug: bool,          // Whether or not to take a history.
 }
 
 impl CoherentPointDriftTransform {
@@ -66,10 +62,6 @@ impl CoherentPointDriftTransform {
             diff: f32::MAX,
             q: f32::MAX,
             P: Array::zeros((num_source_points, num_target_points)),
-            Pt1: Array::zeros(num_target_points),
-            P1: Array::zeros(num_source_points),
-            PX: Array::zeros((num_source_points, dimensions)),
-            Np: 0.0,
             W: Array::zeros((num_source_points, dimensions)),
             G: gaussian_kernel(&Y, &Y, beta),
             num_eig: num_eig.unwrap_or(100),
@@ -92,12 +84,6 @@ impl CoherentPointDriftTransform {
         }
     }
 
-    fn transform_point_cloud(&mut self) {
-        self.update_transform();
-        let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
-        self.TY = self.Y.clone() + self.G.clone().dot(&self.W.clone());
-    }
-
     fn iterate(&mut self) {
         self.expectation();
         self.maximization();
@@ -117,44 +103,55 @@ impl CoherentPointDriftTransform {
         den = den.mapv(|v| if v == 0.0 { f32::EPSILON + c } else { v + c });
 
         self.P = P.clone() / den;
-        self.Pt1 = self.P.clone().sum_axis(Axis(0));
-        self.P1 = self.P.clone().sum_axis(Axis(1));
-        self.Np = self.P1.sum();
-        self.PX = self.P.clone().dot(&self.X);
     }
 
     fn maximization(&mut self) {
-        self.update_transform();
+        let P1 = self.P.clone().sum_axis(Axis(1));
+        let Pt1 = self.P.clone().sum_axis(Axis(0));
+        let PX = self.P.clone().dot(&self.X);
+
+        self.update_transform(&P1, &PX);
         self.transform_point_cloud();
-        self.update_variance();
+        self.update_variance(&P1, &Pt1, &PX);
     }
 
-    fn update_transform(&mut self) {
+    fn update_transform(
+        &mut self,
+        P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+        PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    ) {
         let A = {
-            let left_term = Array::from_diag(&self.P1.clone()).dot(&self.G.clone());
+            let left_term = Array::from_diag(&P1.clone()).dot(&self.G.clone());
             let right_term = self.lambda * self.sigma2 * Array::eye(self.num_source_points.clone());
             left_term + right_term
         };
-        let B = self.PX.clone() - Array::from_diag(&self.P1.clone()).dot(&self.Y.clone());
+        let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
         self.W = solve_matrices(&A, &B);
     }
+    
+    fn transform_point_cloud(&mut self) {
+        self.TY = self.Y.clone() + self.G.clone().dot(&self.W.clone());
+    }
 
-    fn update_variance(&mut self) {
+    fn update_variance(
+        &mut self,
+        P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+        Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+        PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    ) {
         let qprev = self.sigma2;
         self.q = f32::MAX;
-        let xPx = self
-            .Pt1
+        let xPx = Pt1
             .clone()
             .t()
             .dot(&self.X.clone().powi(2).sum_axis(Axis(1)));
-        let yPy = self
-            .P1
+        let yPy = P1
             .clone()
             .t()
             .dot(&self.TY.clone().powi(2).sum_axis(Axis(1)));
-        let trPXY = (self.TY.clone() * self.PX.clone()).sum();
+        let trPXY = (self.TY.clone() * PX.clone()).sum();
 
-        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (self.Np * self.dimensions as f32);
+        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * self.dimensions as f32);
         if self.sigma2 <= 0.0 {
             self.sigma2 = self.tolerance / 10.0;
         }
@@ -198,7 +195,6 @@ fn initialize_sigma2(
     let err = diff.powi(2);
     err.sum() / (dimensions * num_target_points * num_source_points)
 }
-
 
 /// A helper function for converting a 2d array into a string representation.
 fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
