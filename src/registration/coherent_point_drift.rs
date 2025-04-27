@@ -70,7 +70,7 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut P = ((compute_diff(&self.X, &self.TY)).powi(2)).sum_axis(Axis(2));
+        let mut P = compute_squared_euclidean_distance(&self.X, &self.TY);
         P = (-P / (2_f32 * self.sigma2)).exp();
         let c = {
             let num_target_points: usize = self.X.dim().0;
@@ -143,41 +143,40 @@ impl CoherentPointDriftTransform {
     }
 }
 
-// Non cpd functions.
-fn compute_diff(
-    X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> {
-    let X_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
-        Array::from_shape_vec((1, X.dim().0, X.dim().1), X.clone().into_raw_vec()).unwrap();
-    let Y_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
-        Array::from_shape_vec((Y.dim().0, 1, Y.dim().1), Y.clone().into_raw_vec()).unwrap();
-    X_3d - Y_3d
+/// Computes the squared euclidean distance between all vectors in A and B.
+fn compute_squared_euclidean_distance(
+    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    let A_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
+        Array::from_shape_vec((1, A.dim().0, A.dim().1), A.clone().into_raw_vec()).unwrap();
+    let B_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
+        Array::from_shape_vec((B.dim().0, 1, B.dim().1), B.clone().into_raw_vec()).unwrap();
+    (A_3d - B_3d).powi(2).sum_axis(Axis(2))
 }
 
 /// Computes the gaussian kernel for CPD.
 fn gaussian_kernel(
-    X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let X = X.clone();
-    let Y = Y.clone();
-    let diff = compute_diff(&X, &Y).powi(2).sum_axis(Axis(2));
-    (-diff / (2.0 * beta.powi(2))).exp()
+    let A = A.clone();
+    let B = B.clone();
+    let sum_sq_dists = compute_squared_euclidean_distance(&A, &B);
+    (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
 }
 
 /// Initializes sigma squared.
 fn initialize_sigma2(
-    X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> f32 {
-    let num_target_points = X.dim().0 as f32;
-    let dimensions = X.dim().1 as f32;
-    let num_source_points = Y.dim().0 as f32;
-    let diff = compute_diff(X, Y);
-    let err = diff.powi(2);
-    err.sum() / (dimensions * num_target_points * num_source_points)
+    let num_target_points = A.dim().0 as f32;
+    let dimensions = A.dim().1 as f32;
+    let num_source_points = B.dim().0 as f32;
+    let sum_sq_dists = compute_squared_euclidean_distance(A, B);
+    sum_sq_dists.sum() / (dimensions * num_target_points * num_source_points)
 }
 
 /// A helper function for converting a 2d array into a string representation.
