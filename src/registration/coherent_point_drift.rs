@@ -63,11 +63,8 @@ impl CoherentPointDriftTransform {
         let iteration = 0;
         while iteration < self.max_iterations && self.diff > self.tolerance {
             if self.debug {
-                self.history.push(format!(
-                    "\"{}\": {}",
-                    iteration,
-                    array_to_string(&self.TY)
-                ));
+                self.history
+                    .push(format!("\"{}\": {}", iteration, array_to_string(&self.TY)));
             }
             self.iterate();
             iteration += 1;
@@ -87,8 +84,8 @@ impl CoherentPointDriftTransform {
             let dimensions: usize = self.X.dim().1;
             let num_source_points: usize = self.Y.dim().0;
             let left = (2.0 * PI * self.sigma2).powf((dimensions as f32) / 2.0);
-            let right = self.w / (1.0 - self.w) * (num_source_points as f32)
-                / (num_target_points as f32);
+            let right =
+                self.w / (1.0 - self.w) * (num_source_points as f32) / (num_target_points as f32);
             left * right
         };
         let mut den = P.sum_axis(Axis(0));
@@ -123,11 +120,8 @@ impl CoherentPointDriftTransform {
         let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
         self.W = solve_matrices(&A, &B);
     }
-    
-    fn transform_point_cloud(
-        &mut self,
-        G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    ) {
+
+    fn transform_point_cloud(&mut self, G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) {
         self.TY = self.Y.clone() + G.clone().dot(&self.W.clone());
     }
 
