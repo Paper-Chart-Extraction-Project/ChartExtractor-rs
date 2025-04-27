@@ -16,7 +16,7 @@ struct CoherentPointDriftTransform {
     tolerance: f32,
     w: f32,
     max_iterations: u32,
-    diff: f32,
+    change_in_variance: f32,
     P: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     num_eig: u32,
@@ -49,7 +49,7 @@ impl CoherentPointDriftTransform {
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
-            diff: f32::MAX,
+            change_in_variance: f32::MAX,
             P: Array::zeros((num_source_points, num_target_points)),
             W: Array::zeros((num_source_points, dimensions)),
             num_eig: num_eig.unwrap_or(100),
@@ -60,8 +60,8 @@ impl CoherentPointDriftTransform {
 
     pub fn register(&mut self) {
         self.transform_point_cloud(&gaussian_kernel(&self.Y, &self.Y, self.beta));
-        let iteration = 0;
-        while iteration < self.max_iterations && self.diff > self.tolerance {
+        let mut iteration = 0;
+        while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
                 self.history
                     .push(format!("\"{}\": {}", iteration, array_to_string(&self.TY)));
@@ -146,7 +146,7 @@ impl CoherentPointDriftTransform {
         if self.sigma2 <= 0.0 {
             self.sigma2 = self.tolerance / 10.0;
         }
-        self.diff = (self.sigma2 - qprev).abs();
+        self.change_in_variance = (self.sigma2 - qprev).abs();
     }
 }
 
