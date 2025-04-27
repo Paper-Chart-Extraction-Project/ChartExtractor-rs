@@ -102,32 +102,11 @@ impl CoherentPointDriftTransform {
         
         self.W = update_transform(&self.Y, &P1, &PX, &G, self.lambda, self.variance);
         self.TY = transform_point_cloud(&self.Y, &G, &self.W);
-        self.update_variance(&P1, &Pt1, &PX);
+        (self.variance, self.change_in_variance) = 
+            update_variance(&self.X, &self.TY, &P1, &Pt1, &PX, self.variance, self.tolerance);
     }
 
-    fn update_variance(
-        &mut self,
-        P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-        Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-        PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    ) {
-        let qprev = self.variance;
-        let xPx = Pt1
-            .clone()
-            .t()
-            .dot(&self.X.clone().powi(2).sum_axis(Axis(1)));
-        let yPy = P1
-            .clone()
-            .t()
-            .dot(&self.TY.clone().powi(2).sum_axis(Axis(1)));
-        let trPXY = (self.TY.clone() * PX.clone()).sum();
-        let dimensions = self.X.dim().1;
-        self.variance = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
-        if self.variance <= 0.0 {
-            self.variance = self.tolerance / 10.0;
-        }
-        self.change_in_variance = (self.variance - qprev).abs();
-    }
+    
 }
 
 /// Computes the squared euclidean distance between all vectors in A and B.
@@ -198,6 +177,28 @@ fn update_transform(
     };
     let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&Y.clone());
     solve_matrices(&A, &B)
+}
+
+fn update_variance(
+    X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    TY: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    variance: f32,
+    tolerance: f32
+) -> (f32, f32) {
+    let previous_variance = variance;
+    let xPx = Pt1.clone().t().dot(&X.clone().powi(2).sum_axis(Axis(1)));
+    let yPy = P1.clone().t().dot(&TY.clone().powi(2).sum_axis(Axis(1)));
+    let trPXY = (TY.clone() * PX.clone()).sum();
+    let dimensions = X.dim().1;
+    let mut new_variance = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
+    if new_variance <= 0.0 {
+        new_variance = tolerance / 10.0;
+    }
+    let change_in_variance = (new_variance - previous_variance).abs();
+    (new_variance, change_in_variance)
 }
 
 /// A helper function for converting a 2d array into a string representation.
