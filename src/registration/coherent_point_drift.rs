@@ -179,26 +179,6 @@ fn initialize_sigma2(
     sum_sq_dists.sum() / (dimensions * num_target_points * num_source_points)
 }
 
-/// A helper function for converting a 2d array into a string representation.
-fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
-    let mut arr_str = String::from("[");
-    let arr = arr.clone();
-    let chunks = arr.into_iter().chunks(2);
-    let mut p_str: Vec<String> = Vec::new();
-    for chunk in &chunks {
-        let p: Vec<f32> = chunk.collect::<Vec<f32>>();
-        p_str.push(String::from(format!(
-            "{{\"x\": {}, \"y\": {}}}",
-            p[0], p[1]
-        )));
-    }
-    let p_str: String = p_str.join(", ");
-    arr_str.push_str(&p_str);
-
-    arr_str.push_str("]");
-    arr_str
-}
-
 /// Computes the solution for a matrix equation AX = B.
 ///
 /// Goes column by column through B to find the vector that
@@ -219,4 +199,24 @@ fn solve_matrices(
     }
     let solutions = solutions.iter().map(|x| x.view()).collect::<Vec<_>>();
     stack(Axis(1), &solutions[..]).unwrap()
+}
+
+/// A helper function for converting a 2d array into a string representation.
+fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
+    let mut arr_str = String::from("[");
+    let arr = arr.clone();
+    let chunks = arr.into_iter().chunks(2);
+    let mut p_str: Vec<String> = Vec::new();
+    for chunk in &chunks {
+        let p: Vec<f32> = chunk.collect::<Vec<f32>>();
+        p_str.push(String::from(format!(
+            "{{\"x\": {}, \"y\": {}}}",
+            p[0], p[1]
+        )));
+    }
+    let p_str: String = p_str.join(", ");
+    arr_str.push_str(&p_str);
+
+    arr_str.push_str("]");
+    arr_str
 }
