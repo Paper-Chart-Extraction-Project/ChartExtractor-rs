@@ -161,9 +161,7 @@ fn gaussian_kernel(
     B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let A = A.clone();
-    let B = B.clone();
-    let sum_sq_dists = compute_squared_euclidean_distance(&A, &B);
+    let sum_sq_dists = compute_squared_euclidean_distance(A, B);
     (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
 }
 
