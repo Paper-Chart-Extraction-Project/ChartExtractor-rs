@@ -13,15 +13,10 @@ struct CoherentPointDriftTransform {
     beta: f32,
     TY: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     sigma2: f32,
-    num_target_points: usize,
-    num_source_points: usize,
-    dimensions: usize,
     tolerance: f32,
     w: f32,
     max_iterations: u32,
-    iteration: u32,
     diff: f32,
-    q: f32,
     P: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     num_eig: u32,
@@ -51,15 +46,10 @@ impl CoherentPointDriftTransform {
             beta: beta,
             TY: Y.clone(),
             sigma2: initialize_sigma2(&X, &Y),
-            num_target_points: num_target_points,
-            num_source_points: num_source_points,
-            dimensions: dimensions,
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
-            iteration: 0,
             diff: f32::MAX,
-            q: f32::MAX,
             P: Array::zeros((num_source_points, num_target_points)),
             W: Array::zeros((num_source_points, dimensions)),
             num_eig: num_eig.unwrap_or(100),
@@ -70,31 +60,35 @@ impl CoherentPointDriftTransform {
 
     pub fn register(&mut self) {
         self.transform_point_cloud(&gaussian_kernel(&self.Y, &self.Y, self.beta));
-        while self.iteration < self.max_iterations && self.diff > self.tolerance {
+        let iteration = 0;
+        while iteration < self.max_iterations && self.diff > self.tolerance {
             if self.debug {
                 self.history.push(format!(
                     "\"{}\": {}",
-                    self.iteration,
+                    iteration,
                     array_to_string(&self.TY)
                 ));
             }
             self.iterate();
+            iteration += 1;
         }
     }
 
     fn iterate(&mut self) {
         self.expectation();
         self.maximization();
-        self.iteration += 1;
     }
 
     fn expectation(&mut self) {
         let mut P = ((compute_diff(&self.X, &self.TY)).powi(2)).sum_axis(Axis(2));
         P = (-P / (2_f32 * self.sigma2)).exp();
         let c = {
-            let left = (2.0 * PI * self.sigma2).powf((self.dimensions as f32) / 2.0);
-            let right = self.w / (1.0 - self.w) * (self.num_source_points as f32)
-                / (self.num_target_points as f32);
+            let num_target_points: usize = self.X.dim().0;
+            let dimensions: usize = self.X.dim().1;
+            let num_source_points: usize = self.Y.dim().0;
+            let left = (2.0 * PI * self.sigma2).powf((dimensions as f32) / 2.0);
+            let right = self.w / (1.0 - self.w) * (num_source_points as f32)
+                / (num_target_points as f32);
             left * right
         };
         let mut den = P.sum_axis(Axis(0));
@@ -121,8 +115,9 @@ impl CoherentPointDriftTransform {
         G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     ) {
         let A = {
+            let num_source_points: usize = self.Y.dim().0;
             let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
-            let right_term = self.lambda * self.sigma2 * Array::eye(self.num_source_points.clone());
+            let right_term = self.lambda * self.sigma2 * Array::eye(num_source_points.clone());
             left_term + right_term
         };
         let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
@@ -143,7 +138,6 @@ impl CoherentPointDriftTransform {
         PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     ) {
         let qprev = self.sigma2;
-        self.q = f32::MAX;
         let xPx = Pt1
             .clone()
             .t()
@@ -153,8 +147,8 @@ impl CoherentPointDriftTransform {
             .t()
             .dot(&self.TY.clone().powi(2).sum_axis(Axis(1)));
         let trPXY = (self.TY.clone() * PX.clone()).sum();
-
-        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * self.dimensions as f32);
+        let dimensions = self.X.dim().1;
+        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
         if self.sigma2 <= 0.0 {
             self.sigma2 = self.tolerance / 10.0;
         }
