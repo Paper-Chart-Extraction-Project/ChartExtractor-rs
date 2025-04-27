@@ -100,14 +100,14 @@ impl CoherentPointDriftTransform {
     }
 
     fn maximization(&mut self) {
-        let P1 = self.probability_of_match.sum_axis(Axis(1));
-        let Pt1 = self.probability_of_match.sum_axis(Axis(0));
+        let sum_of_probability_rows = self.probability_of_match.sum_axis(Axis(1));
+        let sum_of_probability_columns = self.probability_of_match.sum_axis(Axis(0));
         let PX = self.probability_of_match.dot(&self.target_points);
         let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
         self.W = update_transform(
             &self.source_points,
-            &P1,
+            &sum_of_probability_rows,
             &PX,
             &G,
             self.lambda,
@@ -117,8 +117,8 @@ impl CoherentPointDriftTransform {
         (self.variance, self.change_in_variance) = update_variance(
             &self.target_points,
             &self.transformed_points,
-            &P1,
-            &Pt1,
+            &sum_of_probability_rows,
+            &sum_of_probability_columns,
             &PX,
             self.variance,
             self.tolerance,
@@ -184,7 +184,7 @@ fn transform_point_cloud(
 
 fn update_transform(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    sum_of_probability_rows: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     lambda: f32,
@@ -192,29 +192,34 @@ fn update_transform(
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     let A = {
         let num_source_points: usize = source_points.dim().0;
-        let left_term = Array::from_diag(P1).dot(G);
+        let left_term = Array::from_diag(sum_of_probability_rows).dot(G);
         let right_term = lambda * variance * Array::eye(num_source_points);
         left_term + right_term
     };
-    let B = PX - Array::from_diag(P1).dot(source_points);
+    let B = PX - Array::from_diag(sum_of_probability_rows).dot(source_points);
     solve_matrices(&A, &B)
 }
 
 fn update_variance(
     target_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     transformed_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
-    Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    sum_of_probability_rows: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
+    sum_of_probability_columns: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     variance: f32,
     tolerance: f32,
 ) -> (f32, f32) {
     let previous_variance = variance;
-    let xPx = Pt1.t().dot(&target_points.powi(2).sum_axis(Axis(1)));
-    let yPy = P1.t().dot(&transformed_points.powi(2).sum_axis(Axis(1)));
+    let xPx = sum_of_probability_columns
+        .t()
+        .dot(&target_points.powi(2).sum_axis(Axis(1)));
+    let yPy = sum_of_probability_rows
+        .t()
+        .dot(&transformed_points.powi(2).sum_axis(Axis(1)));
     let trPXY = (transformed_points * PX).sum();
     let dimensions = target_points.dim().1;
-    let mut new_variance = (xPx - 2.0 * trPXY + yPy) / (P1.sum() * dimensions as f32);
+    let mut new_variance =
+        (xPx - 2.0 * trPXY + yPy) / (sum_of_probability_rows.sum() * dimensions as f32);
     if new_variance <= 0.0 {
         new_variance = tolerance / 10.0;
     }
