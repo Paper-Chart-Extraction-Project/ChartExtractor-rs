@@ -7,11 +7,11 @@ use std::f32::EPSILON;
 use std::f32::consts::PI;
 
 struct CoherentPointDriftTransform {
-    X: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    Y: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    target_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    source_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     lambda: f32,
     beta: f32,
-    TY: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    transformed_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     variance: f32,
     tolerance: f32,
     w: f32,
@@ -19,14 +19,14 @@ struct CoherentPointDriftTransform {
     change_in_variance: f32,
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    history: Vec<String>, // Contains all the TY matrices for all iterations for debugging.
+    history: Vec<String>, // Contains all the transformed_points matrices for all iterations for debugging.
     debug: bool,          // Whether or not to take a history.
 }
 
 impl CoherentPointDriftTransform {
     pub fn new(
-        X: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-        Y: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+        target_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+        source_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
         lambda: f32,
         beta: f32,
         w: Option<f32>,
@@ -34,21 +34,21 @@ impl CoherentPointDriftTransform {
         max_iterations: Option<u32>,
         debug: Option<bool>,
     ) -> CoherentPointDriftTransform {
-        let num_target_points: usize = X.dim().0;
-        let dimensions: usize = X.dim().1;
-        let num_source_points: usize = Y.dim().0;
+        let num_target_points: usize = target_points.dim().0;
+        let dimensions: usize = target_points.dim().1;
+        let num_source_points: usize = source_points.dim().0;
         let initial_variance: f32 = {
-            let sum_sq_dists = compute_squared_euclidean_distance(&X, &Y).sum();
-            let denominator: f32 = 
-                (dimensions as f32 * num_target_points as f32 * num_source_points as f32);
+            let sum_sq_dists = compute_squared_euclidean_distance(&target_points, &source_points).sum();
+            let denominator: f32 =
+                dimensions as f32 * num_target_points as f32 * num_source_points as f32;
             sum_sq_dists / denominator
         };
         CoherentPointDriftTransform {
-            X: X,
-            Y: Y.clone(),
+            target_points: target_points,
+            source_points: source_points.clone(),
             lambda: lambda,
             beta: beta,
-            TY: Y,
+            transformed_points: source_points,
             variance: initial_variance,
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
@@ -62,13 +62,13 @@ impl CoherentPointDriftTransform {
     }
 
     pub fn register(&mut self) {
-        let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
-        self.TY = transform_point_cloud(&self.Y, &G, &self.W);
+        let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+        self.transformed_points = transform_point_cloud(&self.source_points, &G, &self.W);
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
                 self.history
-                    .push(format!("\"{}\": {}", iteration, array_to_string(&self.TY)));
+                    .push(format!("\"{}\": {}", iteration, array_to_string(&self.transformed_points)));
             }
             self.expectation();
             self.maximization();
@@ -77,12 +77,12 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut P = compute_squared_euclidean_distance(&self.X, &self.TY);
+        let mut P = compute_squared_euclidean_distance(&self.target_points, &self.transformed_points);
         P = (-P / (2_f32 * self.variance)).exp();
         let c = {
-            let num_target_points: usize = self.X.dim().0;
-            let dimensions: usize = self.X.dim().1;
-            let num_source_points: usize = self.Y.dim().0;
+            let num_target_points: usize = self.target_points.dim().0;
+            let dimensions: usize = self.target_points.dim().1;
+            let num_source_points: usize = self.source_points.dim().0;
             let left = (2.0 * PI * self.variance).powf((dimensions as f32) / 2.0);
             let right =
                 self.w / (1.0 - self.w) * (num_source_points as f32) / (num_target_points as f32);
@@ -97,13 +97,20 @@ impl CoherentPointDriftTransform {
     fn maximization(&mut self) {
         let P1 = self.probability_of_match.sum_axis(Axis(1));
         let Pt1 = self.probability_of_match.sum_axis(Axis(0));
-        let PX = self.probability_of_match.dot(&self.X);
-        let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
-        
-        self.W = update_transform(&self.Y, &P1, &PX, &G, self.lambda, self.variance);
-        self.TY = transform_point_cloud(&self.Y, &G, &self.W);
-        (self.variance, self.change_in_variance) = 
-            update_variance(&self.X, &self.TY, &P1, &Pt1, &PX, self.variance, self.tolerance);
+        let PX = self.probability_of_match.dot(&self.target_points);
+        let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+
+        self.W = update_transform(&self.source_points, &P1, &PX, &G, self.lambda, self.variance);
+        self.transformed_points = transform_point_cloud(&self.source_points, &G, &self.W);
+        (self.variance, self.change_in_variance) = update_variance(
+            &self.target_points,
+            &self.transformed_points,
+            &P1,
+            &Pt1,
+            &PX,
+            self.variance,
+            self.tolerance,
+        );
     }
 }
 
@@ -150,45 +157,45 @@ fn solve_matrices(
 }
 
 fn transform_point_cloud(
-    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
+    W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    Y + G.dot(W)
+    source_points + G.dot(W)
 }
 
 fn update_transform(
-    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     lambda: f32,
-    variance: f32
+    variance: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     let A = {
-        let num_source_points: usize = Y.dim().0;
+        let num_source_points: usize = source_points.dim().0;
         let left_term = Array::from_diag(P1).dot(G);
         let right_term = lambda * variance * Array::eye(num_source_points);
         left_term + right_term
     };
-    let B = PX - Array::from_diag(P1).dot(Y);
+    let B = PX - Array::from_diag(P1).dot(source_points);
     solve_matrices(&A, &B)
 }
 
 fn update_variance(
-    X: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    TY: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    target_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    transformed_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     variance: f32,
-    tolerance: f32
+    tolerance: f32,
 ) -> (f32, f32) {
     let previous_variance = variance;
-    let xPx = Pt1.t().dot(&X.powi(2).sum_axis(Axis(1)));
-    let yPy = P1.t().dot(&TY.powi(2).sum_axis(Axis(1)));
-    let trPXY = (TY * PX).sum();
-    let dimensions = X.dim().1;
+    let xPx = Pt1.t().dot(&target_points.powi(2).sum_axis(Axis(1)));
+    let yPy = P1.t().dot(&transformed_points.powi(2).sum_axis(Axis(1)));
+    let trPXY = (transformed_points * PX).sum();
+    let dimensions = target_points.dim().1;
     let mut new_variance = (xPx - 2.0 * trPXY + yPy) / (P1.sum() * dimensions as f32);
     if new_variance <= 0.0 {
         new_variance = tolerance / 10.0;
