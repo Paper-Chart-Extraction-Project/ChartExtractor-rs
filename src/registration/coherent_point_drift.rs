@@ -66,14 +66,10 @@ impl CoherentPointDriftTransform {
                 self.history
                     .push(format!("\"{}\": {}", iteration, array_to_string(&self.TY)));
             }
-            self.iterate();
+            self.expectation();
+            self.maximization();
             iteration += 1;
         }
-    }
-
-    fn iterate(&mut self) {
-        self.expectation();
-        self.maximization();
     }
 
     fn expectation(&mut self) {
