@@ -19,7 +19,7 @@ struct CoherentPointDriftTransform {
     change_in_variance: f32,
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    history: Vec<String>, // Contains all the transformed_points matrices for all iterations for debugging.
+    history: Vec<String>, // Contains all the transformed_points matrices for all iterations.
     debug: bool,          // Whether or not to take a history.
 }
 
@@ -38,7 +38,8 @@ impl CoherentPointDriftTransform {
         let dimensions: usize = target_points.dim().1;
         let num_source_points: usize = source_points.dim().0;
         let initial_variance: f32 = {
-            let sum_sq_dists = compute_squared_euclidean_distance(&target_points, &source_points).sum();
+            let sum_sq_dists =
+                compute_squared_euclidean_distance(&target_points, &source_points).sum();
             let denominator: f32 =
                 dimensions as f32 * num_target_points as f32 * num_source_points as f32;
             sum_sq_dists / denominator
@@ -67,8 +68,11 @@ impl CoherentPointDriftTransform {
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
-                self.history
-                    .push(format!("\"{}\": {}", iteration, array_to_string(&self.transformed_points)));
+                self.history.push(format!(
+                    "\"{}\": {}",
+                    iteration,
+                    array_to_string(&self.transformed_points)
+                ));
             }
             self.expectation();
             self.maximization();
@@ -77,7 +81,8 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut P = compute_squared_euclidean_distance(&self.target_points, &self.transformed_points);
+        let mut P =
+            compute_squared_euclidean_distance(&self.target_points, &self.transformed_points);
         P = (-P / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.target_points.dim().0;
@@ -100,7 +105,14 @@ impl CoherentPointDriftTransform {
         let PX = self.probability_of_match.dot(&self.target_points);
         let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
-        self.W = update_transform(&self.source_points, &P1, &PX, &G, self.lambda, self.variance);
+        self.W = update_transform(
+            &self.source_points,
+            &P1,
+            &PX,
+            &G,
+            self.lambda,
+            self.variance,
+        );
         self.transformed_points = transform_point_cloud(&self.source_points, &G, &self.W);
         (self.variance, self.change_in_variance) = update_variance(
             &self.target_points,
@@ -119,10 +131,16 @@ fn compute_squared_euclidean_distance(
     A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let A_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
-        Array::from_shape_vec((1, A.dim().0, A.dim().1), A.clone().into_raw_vec()).unwrap();
-    let B_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> =
-        Array::from_shape_vec((B.dim().0, 1, B.dim().1), B.clone().into_raw_vec()).unwrap();
+    let A_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
+        (1, A.dim().0, A.dim().1),
+        A.clone().into_raw_vec_and_offset().0,
+    )
+    .unwrap();
+    let B_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
+        (B.dim().0, 1, B.dim().1),
+        B.clone().into_raw_vec_and_offset().0,
+    )
+    .unwrap();
     (A_3d - B_3d).powi(2).sum_axis(Axis(2))
 }
 
