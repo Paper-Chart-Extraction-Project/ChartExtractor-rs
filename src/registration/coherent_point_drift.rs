@@ -62,7 +62,8 @@ impl CoherentPointDriftTransform {
     }
 
     pub fn register(&mut self) {
-        self.transform_point_cloud(&gaussian_kernel(&self.Y, &self.Y, self.beta));
+        let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
+        self.TY = transform_point_cloud(&self.Y, &G, &self.W);
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
@@ -100,7 +101,7 @@ impl CoherentPointDriftTransform {
         let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
 
         self.update_transform(&P1, &PX, &G);
-        self.transform_point_cloud(&G);
+        self.TY = transform_point_cloud(&self.Y, &G, &self.W);
         self.update_variance(&P1, &Pt1, &PX);
     }
 
@@ -118,10 +119,6 @@ impl CoherentPointDriftTransform {
         };
         let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
         self.W = solve_matrices(&A, &B);
-    }
-
-    fn transform_point_cloud(&mut self, G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) {
-        self.TY = self.Y.clone() + G.clone().dot(&self.W.clone());
     }
 
     fn update_variance(
@@ -191,6 +188,14 @@ fn solve_matrices(
     }
     let solutions = solutions.iter().map(|x| x.view()).collect::<Vec<_>>();
     stack(Axis(1), &solutions[..]).unwrap()
+}
+
+fn transform_point_cloud(
+    Y: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>
+) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
+    Y.clone() + G.clone().dot(&W.clone())
 }
 
 /// A helper function for converting a 2d array into a string representation.
