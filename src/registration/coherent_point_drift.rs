@@ -24,7 +24,6 @@ struct CoherentPointDriftTransform {
     q: f32,
     P: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    G: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     num_eig: u32,
     history: Vec<String>, // Contains all the TY matrices for all iterations for debugging.
     debug: bool,          // Whether or not to take a history.
@@ -63,7 +62,6 @@ impl CoherentPointDriftTransform {
             q: f32::MAX,
             P: Array::zeros((num_source_points, num_target_points)),
             W: Array::zeros((num_source_points, dimensions)),
-            G: gaussian_kernel(&Y, &Y, beta),
             num_eig: num_eig.unwrap_or(100),
             history: Vec::new(),
             debug: debug.unwrap_or(false),
@@ -71,7 +69,7 @@ impl CoherentPointDriftTransform {
     }
 
     pub fn register(&mut self) {
-        self.transform_point_cloud();
+        self.transform_point_cloud(&gaussian_kernel(&self.Y, &self.Y, self.beta));
         while self.iteration < self.max_iterations && self.diff > self.tolerance {
             if self.debug {
                 self.history.push(format!(
@@ -109,9 +107,10 @@ impl CoherentPointDriftTransform {
         let P1 = self.P.clone().sum_axis(Axis(1));
         let Pt1 = self.P.clone().sum_axis(Axis(0));
         let PX = self.P.clone().dot(&self.X);
+        let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
 
-        self.update_transform(&P1, &PX);
-        self.transform_point_cloud();
+        self.update_transform(&P1, &PX, &G);
+        self.transform_point_cloud(&G);
         self.update_variance(&P1, &Pt1, &PX);
     }
 
@@ -119,9 +118,10 @@ impl CoherentPointDriftTransform {
         &mut self,
         P1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
         PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+        G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     ) {
         let A = {
-            let left_term = Array::from_diag(&P1.clone()).dot(&self.G.clone());
+            let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
             let right_term = self.lambda * self.sigma2 * Array::eye(self.num_source_points.clone());
             left_term + right_term
         };
@@ -129,8 +129,11 @@ impl CoherentPointDriftTransform {
         self.W = solve_matrices(&A, &B);
     }
     
-    fn transform_point_cloud(&mut self) {
-        self.TY = self.Y.clone() + self.G.clone().dot(&self.W.clone());
+    fn transform_point_cloud(
+        &mut self,
+        G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    ) {
+        self.TY = self.Y.clone() + G.clone().dot(&self.W.clone());
     }
 
     fn update_variance(
