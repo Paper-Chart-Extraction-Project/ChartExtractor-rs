@@ -44,11 +44,11 @@ impl CoherentPointDriftTransform {
             sum_sq_dists / denominator
         };
         CoherentPointDriftTransform {
-            X: X.clone(),
+            X: X,
             Y: Y.clone(),
             lambda: lambda,
             beta: beta,
-            TY: Y.clone(),
+            TY: Y,
             variance: initial_variance,
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
@@ -91,13 +91,13 @@ impl CoherentPointDriftTransform {
         let mut den = P.sum_axis(Axis(0));
         den = den.mapv(|v| if v == 0.0 { f32::EPSILON + c } else { v + c });
 
-        self.probability_of_match = P.clone() / den;
+        self.probability_of_match = P / den;
     }
 
     fn maximization(&mut self) {
-        let P1 = self.probability_of_match.clone().sum_axis(Axis(1));
-        let Pt1 = self.probability_of_match.clone().sum_axis(Axis(0));
-        let PX = self.probability_of_match.clone().dot(&self.X);
+        let P1 = self.probability_of_match.sum_axis(Axis(1));
+        let Pt1 = self.probability_of_match.sum_axis(Axis(0));
+        let PX = self.probability_of_match.dot(&self.X);
         let G = gaussian_kernel(&self.Y, &self.Y, self.beta);
         
         self.W = update_transform(&self.Y, &P1, &PX, &G, self.lambda, self.variance);
@@ -105,8 +105,6 @@ impl CoherentPointDriftTransform {
         (self.variance, self.change_in_variance) = 
             update_variance(&self.X, &self.TY, &P1, &Pt1, &PX, self.variance, self.tolerance);
     }
-
-    
 }
 
 /// Computes the squared euclidean distance between all vectors in A and B.
@@ -140,8 +138,6 @@ fn solve_matrices(
     A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let A = A.clone();
-    let B = B.clone();
     let num_cols = B.dim().1;
     let mut solutions: Vec<_> = Vec::new();
     for c in 0..num_cols {
@@ -171,11 +167,11 @@ fn update_transform(
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     let A = {
         let num_source_points: usize = Y.dim().0;
-        let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
-        let right_term = lambda * variance * Array::eye(num_source_points.clone());
+        let left_term = Array::from_diag(P1).dot(G);
+        let right_term = lambda * variance * Array::eye(num_source_points);
         left_term + right_term
     };
-    let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&Y.clone());
+    let B = PX - Array::from_diag(P1).dot(Y);
     solve_matrices(&A, &B)
 }
 
@@ -189,11 +185,11 @@ fn update_variance(
     tolerance: f32
 ) -> (f32, f32) {
     let previous_variance = variance;
-    let xPx = Pt1.clone().t().dot(&X.clone().powi(2).sum_axis(Axis(1)));
-    let yPy = P1.clone().t().dot(&TY.clone().powi(2).sum_axis(Axis(1)));
-    let trPXY = (TY.clone() * PX.clone()).sum();
+    let xPx = Pt1.t().dot(&X.powi(2).sum_axis(Axis(1)));
+    let yPy = P1.t().dot(&TY.powi(2).sum_axis(Axis(1)));
+    let trPXY = (TY * PX).sum();
     let dimensions = X.dim().1;
-    let mut new_variance = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
+    let mut new_variance = (xPx - 2.0 * trPXY + yPy) / (P1.sum() * dimensions as f32);
     if new_variance <= 0.0 {
         new_variance = tolerance / 10.0;
     }
