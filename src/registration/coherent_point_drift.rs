@@ -12,7 +12,7 @@ struct CoherentPointDriftTransform {
     lambda: f32,
     beta: f32,
     TY: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    sigma2: f32,
+    variance: f32,
     tolerance: f32,
     w: f32,
     max_iterations: u32,
@@ -37,13 +37,19 @@ impl CoherentPointDriftTransform {
         let num_target_points: usize = X.dim().0;
         let dimensions: usize = X.dim().1;
         let num_source_points: usize = Y.dim().0;
+        let initial_variance: f32 = {
+            let sum_sq_dists = compute_squared_euclidean_distance(&X, &Y).sum();
+            let denominator: f32 = 
+                (dimensions as f32 * num_target_points as f32 * num_source_points as f32);
+            sum_sq_dists / denominator
+        };
         CoherentPointDriftTransform {
             X: X.clone(),
             Y: Y.clone(),
             lambda: lambda,
             beta: beta,
             TY: Y.clone(),
-            sigma2: initialize_sigma2(&X, &Y),
+            variance: initial_variance,
             tolerance: tolerance.unwrap_or(0.001),
             w: w.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
@@ -71,12 +77,12 @@ impl CoherentPointDriftTransform {
 
     fn expectation(&mut self) {
         let mut P = compute_squared_euclidean_distance(&self.X, &self.TY);
-        P = (-P / (2_f32 * self.sigma2)).exp();
+        P = (-P / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.X.dim().0;
             let dimensions: usize = self.X.dim().1;
             let num_source_points: usize = self.Y.dim().0;
-            let left = (2.0 * PI * self.sigma2).powf((dimensions as f32) / 2.0);
+            let left = (2.0 * PI * self.variance).powf((dimensions as f32) / 2.0);
             let right =
                 self.w / (1.0 - self.w) * (num_source_points as f32) / (num_target_points as f32);
             left * right
@@ -107,7 +113,7 @@ impl CoherentPointDriftTransform {
         let A = {
             let num_source_points: usize = self.Y.dim().0;
             let left_term = Array::from_diag(&P1.clone()).dot(&G.clone());
-            let right_term = self.lambda * self.sigma2 * Array::eye(num_source_points.clone());
+            let right_term = self.lambda * self.variance * Array::eye(num_source_points.clone());
             left_term + right_term
         };
         let B = PX.clone() - Array::from_diag(&P1.clone()).dot(&self.Y.clone());
@@ -124,7 +130,7 @@ impl CoherentPointDriftTransform {
         Pt1: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
         PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     ) {
-        let qprev = self.sigma2;
+        let qprev = self.variance;
         let xPx = Pt1
             .clone()
             .t()
@@ -135,11 +141,11 @@ impl CoherentPointDriftTransform {
             .dot(&self.TY.clone().powi(2).sum_axis(Axis(1)));
         let trPXY = (self.TY.clone() * PX.clone()).sum();
         let dimensions = self.X.dim().1;
-        self.sigma2 = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
-        if self.sigma2 <= 0.0 {
-            self.sigma2 = self.tolerance / 10.0;
+        self.variance = (xPx - 2.0 * trPXY + yPy) / (P1.clone().sum() * dimensions as f32);
+        if self.variance <= 0.0 {
+            self.variance = self.tolerance / 10.0;
         }
-        self.change_in_variance = (self.sigma2 - qprev).abs();
+        self.change_in_variance = (self.variance - qprev).abs();
     }
 }
 
@@ -163,18 +169,6 @@ fn gaussian_kernel(
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     let sum_sq_dists = compute_squared_euclidean_distance(A, B);
     (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
-}
-
-/// Initializes sigma squared.
-fn initialize_sigma2(
-    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-) -> f32 {
-    let num_target_points = A.dim().0 as f32;
-    let dimensions = A.dim().1 as f32;
-    let num_source_points = B.dim().0 as f32;
-    let sum_sq_dists = compute_squared_euclidean_distance(A, B);
-    sum_sq_dists.sum() / (dimensions * num_target_points * num_source_points)
 }
 
 /// Computes the solution for a matrix equation AX = B.
