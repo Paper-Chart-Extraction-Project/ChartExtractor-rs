@@ -101,6 +101,10 @@ impl CoherentPointDriftTransform {
 
     fn maximization(&mut self) {
         let sum_of_probability_rows = self.probability_of_match.sum_axis(Axis(1));
+        // Mathematically speaking, sum_of_probability_columns should always be
+        // a vector of approximately ones. However, I don't want to change the
+        // logic of the original author, so it stays.
+        // TODO: Test whether this is necessary.
         let sum_of_probability_columns = self.probability_of_match.sum_axis(Axis(0));
         let PX = self.probability_of_match.dot(&self.target_points);
         let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
