@@ -164,15 +164,15 @@ fn compute_gaussian_kernel(
 /// solves that equation and then contatenates all the solution
 /// vectors as columns in the resulting matrix.
 fn solve_matrices(
-    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_a: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let num_cols = B.dim().1;
+    let num_cols = matrix_b.dim().1;
     let mut solutions: Vec<_> = Vec::new();
-    for c in 0..num_cols {
-        let col = B.slice(s![.., c]).to_owned();
-        let soln = A.solve_into(col).unwrap();
-        solutions.push(soln);
+    for column_ix in 0..num_cols {
+        let col = matrix_b.slice(s![.., column_ix]).to_owned();
+        let solution = matrix_a.solve_into(col).unwrap();
+        solutions.push(solution);
     }
     let solutions = solutions.iter().map(|x| x.view()).collect::<Vec<_>>();
     stack(Axis(1), &solutions[..]).unwrap()
