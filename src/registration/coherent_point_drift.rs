@@ -109,7 +109,7 @@ impl CoherentPointDriftTransform {
         let PX = self.probability_of_match.dot(&self.target_points);
         let gaussian_kernel= compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
-        self.W = update_transform(
+        self.W = compute_updated_transform(
             &self.source_points,
             &sum_of_probability_rows,
             &PX,
@@ -186,7 +186,7 @@ fn transform_point_cloud(
     source_points + gaussian_kernel.dot(W)
 }
 
-fn update_transform(
+fn compute_updated_transform(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     sum_of_probability_rows: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
