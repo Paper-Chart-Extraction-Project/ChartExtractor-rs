@@ -18,7 +18,9 @@ struct CoherentPointDriftTransform {
     max_iterations: u32,
     change_in_variance: f32,
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    W: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    /// A matrix which, when linearly combined with the gaussian kernel, contains
+    /// the optimal displacement field to align the source points to the target.
+    w_coefs: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     history: Vec<String>, // Contains all the transformed_points matrices for all iterations.
     debug: bool,          // Whether or not to take a history.
 }
@@ -55,7 +57,7 @@ impl CoherentPointDriftTransform {
             max_iterations: max_iterations.unwrap_or(100),
             change_in_variance: f32::MAX,
             probability_of_match: Array::zeros((num_source_points, num_target_points)),
-            W: Array::zeros((num_source_points, dimensions)),
+            w_coefs: Array::zeros((num_source_points, dimensions)),
             history: Vec::new(),
             debug: debug.unwrap_or(false),
         }
@@ -65,7 +67,7 @@ impl CoherentPointDriftTransform {
         let gaussian_kernel =
             compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
         self.transformed_points =
-            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
+            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.w_coefs);
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
@@ -111,7 +113,7 @@ impl CoherentPointDriftTransform {
         let gaussian_kernel =
             compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
-        self.W = compute_updated_transform(
+        self.w_coefs = compute_updated_transform(
             &self.source_points,
             &sum_of_probability_rows,
             &PX,
@@ -120,7 +122,7 @@ impl CoherentPointDriftTransform {
             self.variance,
         );
         self.transformed_points =
-            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
+            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.w_coefs);
         (self.variance, self.change_in_variance) = update_variance(
             &self.target_points,
             &self.transformed_points,
@@ -184,9 +186,9 @@ fn solve_matrices(
 fn compute_transformed_point_cloud(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     gaussian_kernel: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    w_coefs: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    source_points + gaussian_kernel.dot(W)
+    source_points + gaussian_kernel.dot(w_coefs)
 }
 
 fn compute_updated_transform(
