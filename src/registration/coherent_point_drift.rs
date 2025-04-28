@@ -150,11 +150,11 @@ fn compute_squared_euclidean_distance(
 
 /// Computes the gaussian kernel for CPD.
 fn compute_gaussian_kernel(
-    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_a: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let sum_sq_dists = compute_squared_euclidean_distance(A, B);
+    let sum_sq_dists = compute_squared_euclidean_distance(matrix_a, matrix_b);
     (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
 }
 
