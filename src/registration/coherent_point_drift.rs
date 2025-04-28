@@ -1,5 +1,6 @@
 extern crate openblas_src;
 
+use crate::annotations::point::Point;
 use itertools::Itertools;
 use ndarray::{Array, ArrayBase, Axis, Dim, OwnedRepr, s, stack};
 use ndarray_linalg::Solve;
@@ -79,6 +80,44 @@ impl CoherentPointDriftTransform {
             history: Vec::new(),
             debug: debug.unwrap_or(false),
         }
+    }
+
+    pub fn from_point_vectors(
+        target_points: Vec<Point>,
+        source_points: Vec<Point>,
+        lambda: f32,
+        beta: f32,
+        weight_of_uniform_dist: Option<f32>,
+        tolerance: Option<f32>,
+        max_iterations: Option<u32>,
+        debug: Option<bool>
+    ) -> CoherentPointDriftTransform {
+        let target_point_array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = {
+            let mut flattened_point_vec = Vec::new();
+            for p in target_points.iter() {
+                flattened_point_vec.push(p.x);
+                flattened_point_vec.push(p.y);
+            }
+            Array::from_shape_vec((target_points.len(), 2), flattened_point_vec).unwrap()
+        };
+        let source_point_array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = {
+            let mut flattened_point_vec = Vec::new();
+            for p in source_points.iter() {
+                flattened_point_vec.push(p.x);
+                flattened_point_vec.push(p.y);
+            }
+            Array::from_shape_vec((source_points.len(), 2), flattened_point_vec).unwrap()
+        };
+        CoherentPointDriftTransform::new(
+            target_point_array,
+            source_point_array,
+            lambda,
+            beta,
+            weight_of_uniform_dist,
+            tolerance,
+            max_iterations,
+            debug
+        )
     }
 
     pub fn register(&mut self) {
