@@ -14,7 +14,7 @@ struct CoherentPointDriftTransform {
     transformed_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     variance: f32,
     tolerance: f32,
-    w: f32,
+    weight_of_uniform_dist: f32,
     max_iterations: u32,
     change_in_variance: f32,
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
@@ -29,7 +29,7 @@ impl CoherentPointDriftTransform {
         source_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
         lambda: f32,
         beta: f32,
-        w: Option<f32>,
+        weight_of_uniform_dist: Option<f32>,
         tolerance: Option<f32>,
         max_iterations: Option<u32>,
         debug: Option<bool>,
@@ -38,8 +38,7 @@ impl CoherentPointDriftTransform {
         let dimensions: usize = target_points.dim().1;
         let num_source_points: usize = source_points.dim().0;
         let initial_variance: f32 = {
-            let sum_sq_dists =
-                compute_squared_distance(&target_points, &source_points).sum();
+            let sum_sq_dists = compute_squared_distance(&target_points, &source_points).sum();
             let denominator: f32 =
                 dimensions as f32 * num_target_points as f32 * num_source_points as f32;
             sum_sq_dists / denominator
@@ -52,7 +51,7 @@ impl CoherentPointDriftTransform {
             transformed_points: source_points,
             variance: initial_variance,
             tolerance: tolerance.unwrap_or(0.001),
-            w: w.unwrap_or(0.0),
+            weight_of_uniform_dist: weight_of_uniform_dist.unwrap_or(0.0),
             max_iterations: max_iterations.unwrap_or(100),
             change_in_variance: f32::MAX,
             probability_of_match: Array::zeros((num_source_points, num_target_points)),
@@ -83,16 +82,16 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut P =
-            compute_squared_distance(&self.target_points, &self.transformed_points);
+        let mut P = compute_squared_distance(&self.target_points, &self.transformed_points);
         P = (-P / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.target_points.dim().0;
             let dimensions: usize = self.target_points.dim().1;
             let num_source_points: usize = self.source_points.dim().0;
             let left = (2.0 * PI * self.variance).powf((dimensions as f32) / 2.0);
-            let right =
-                self.w / (1.0 - self.w) * (num_source_points as f32) / (num_target_points as f32);
+            let right = self.weight_of_uniform_dist / (1.0 - self.weight_of_uniform_dist)
+                * (num_source_points as f32)
+                / (num_target_points as f32);
             left * right
         };
         let mut den = P.sum_axis(Axis(0));
