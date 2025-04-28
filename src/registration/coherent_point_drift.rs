@@ -194,14 +194,14 @@ fn update_transform(
     lambda: f32,
     variance: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let A = {
+    let matrix_a = {
         let num_source_points: usize = source_points.dim().0;
         let left_term = Array::from_diag(sum_of_probability_rows).dot(gaussian_kernel);
         let right_term = lambda * variance * Array::eye(num_source_points);
         left_term + right_term
     };
-    let B = PX - Array::from_diag(sum_of_probability_rows).dot(source_points);
-    solve_matrices(&A, &B)
+    let matrix_b = PX - Array::from_diag(sum_of_probability_rows).dot(source_points);
+    solve_matrices(&matrix_a, &matrix_b)
 }
 
 fn update_variance(
