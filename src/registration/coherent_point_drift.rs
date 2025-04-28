@@ -39,7 +39,7 @@ impl CoherentPointDriftTransform {
         let num_source_points: usize = source_points.dim().0;
         let initial_variance: f32 = {
             let sum_sq_dists =
-                compute_squared_euclidean_distance(&target_points, &source_points).sum();
+                compute_squared_distance(&target_points, &source_points).sum();
             let denominator: f32 =
                 dimensions as f32 * num_target_points as f32 * num_source_points as f32;
             sum_sq_dists / denominator
@@ -84,7 +84,7 @@ impl CoherentPointDriftTransform {
 
     fn expectation(&mut self) {
         let mut P =
-            compute_squared_euclidean_distance(&self.target_points, &self.transformed_points);
+            compute_squared_distance(&self.target_points, &self.transformed_points);
         P = (-P / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.target_points.dim().0;
@@ -135,7 +135,7 @@ impl CoherentPointDriftTransform {
 }
 
 /// Computes the squared euclidean distance between all vectors in A and B.
-fn compute_squared_euclidean_distance(
+fn compute_squared_distance(
     matrix_a: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
@@ -158,7 +158,7 @@ fn compute_gaussian_kernel(
     matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let sum_sq_dists = compute_squared_euclidean_distance(matrix_a, matrix_b);
+    let sum_sq_dists = compute_squared_distance(matrix_a, matrix_b);
     (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
 }
 
