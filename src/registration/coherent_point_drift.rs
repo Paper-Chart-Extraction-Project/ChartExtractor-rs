@@ -82,8 +82,8 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut P = compute_squared_distance(&self.target_points, &self.transformed_points);
-        P = (-P / (2_f32 * self.variance)).exp();
+        let mut new_probabilities = compute_squared_distance(&self.target_points, &self.transformed_points);
+        new_probabilities = (-new_probabilities / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.target_points.dim().0;
             let dimensions: usize = self.target_points.dim().1;
@@ -94,10 +94,10 @@ impl CoherentPointDriftTransform {
                 / (num_target_points as f32);
             left * right
         };
-        let mut den = P.sum_axis(Axis(0));
+        let mut den = new_probabilities.sum_axis(Axis(0));
         den = den.mapv(|v| if v == 0.0 { f32::EPSILON + c } else { v + c });
 
-        self.probability_of_match = P / den;
+        self.probability_of_match = new_probabilities / den;
     }
 
     fn maximization(&mut self) {
