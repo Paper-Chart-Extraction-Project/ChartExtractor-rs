@@ -71,7 +71,7 @@ impl CoherentPointDriftTransform {
                 self.history.push(format!(
                     "\"{}\": {}",
                     iteration,
-                    array_to_string(&self.transformed_points)
+                    array_to_json_string(&self.transformed_points)
                 ));
             }
             self.expectation();
@@ -232,7 +232,11 @@ fn update_variance(
 }
 
 /// A helper function for converting a 2d array into a string representation.
-fn array_to_string(array: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
+///
+/// Used for debugging CoherentPointDriftTransform. When debug is set to true,
+/// the transformed point cloud is dumped to a json formatted string using
+/// this function.
+fn array_to_json_string(array: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
     let mut array_str = String::from("[");
     let array = array.clone();
     let chunks = array.into_iter().chunks(2);
