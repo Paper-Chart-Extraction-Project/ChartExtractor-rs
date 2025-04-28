@@ -63,8 +63,8 @@ impl CoherentPointDriftTransform {
     }
 
     pub fn register(&mut self) {
-        let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
-        self.transformed_points = transform_point_cloud(&self.source_points, &G, &self.W);
+        let gaussian_kernel = compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+        self.transformed_points = transform_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
@@ -102,22 +102,22 @@ impl CoherentPointDriftTransform {
     fn maximization(&mut self) {
         let sum_of_probability_rows = self.probability_of_match.sum_axis(Axis(1));
         // Mathematically speaking, sum_of_probability_columns should always be
-        // a vector of approximately ones. However, I don't want to change the
-        // logic of the original author, so it stays.
+        // a vector of approximately ones (most runs the whole vector is within 1e-5 of 1.0).
+        // However, I don't want to change the logic of the original author, so it stays.
         // TODO: Test whether this is necessary.
         let sum_of_probability_columns = self.probability_of_match.sum_axis(Axis(0));
         let PX = self.probability_of_match.dot(&self.target_points);
-        let G = gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+        let gaussian_kernel= compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
         self.W = update_transform(
             &self.source_points,
             &sum_of_probability_rows,
             &PX,
-            &G,
+            &gaussian_kernel,
             self.lambda,
             self.variance,
         );
-        self.transformed_points = transform_point_cloud(&self.source_points, &G, &self.W);
+        self.transformed_points = transform_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
         (self.variance, self.change_in_variance) = update_variance(
             &self.target_points,
             &self.transformed_points,
@@ -149,7 +149,7 @@ fn compute_squared_euclidean_distance(
 }
 
 /// Computes the gaussian kernel for CPD.
-fn gaussian_kernel(
+fn compute_gaussian_kernel(
     A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
@@ -180,23 +180,23 @@ fn solve_matrices(
 
 fn transform_point_cloud(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    gaussian_kernel: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    source_points + G.dot(W)
+    source_points + gaussian_kernel.dot(W)
 }
 
 fn update_transform(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     sum_of_probability_rows: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 1]>>,
     PX: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    G: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    gaussian_kernel: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     lambda: f32,
     variance: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
     let A = {
         let num_source_points: usize = source_points.dim().0;
-        let left_term = Array::from_diag(sum_of_probability_rows).dot(G);
+        let left_term = Array::from_diag(sum_of_probability_rows).dot(gaussian_kernel);
         let right_term = lambda * variance * Array::eye(num_source_points);
         left_term + right_term
     };
