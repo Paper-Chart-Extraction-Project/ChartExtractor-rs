@@ -63,8 +63,10 @@ impl CoherentPointDriftTransform {
     }
 
     pub fn register(&mut self) {
-        let gaussian_kernel = compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
-        self.transformed_points = transform_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
+        let gaussian_kernel =
+            compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+        self.transformed_points =
+            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
         let mut iteration = 0;
         while iteration < self.max_iterations && self.change_in_variance > self.tolerance {
             if self.debug {
@@ -107,7 +109,8 @@ impl CoherentPointDriftTransform {
         // TODO: Test whether this is necessary.
         let sum_of_probability_columns = self.probability_of_match.sum_axis(Axis(0));
         let PX = self.probability_of_match.dot(&self.target_points);
-        let gaussian_kernel= compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
+        let gaussian_kernel =
+            compute_gaussian_kernel(&self.source_points, &self.source_points, self.beta);
 
         self.W = compute_updated_transform(
             &self.source_points,
@@ -117,7 +120,8 @@ impl CoherentPointDriftTransform {
             self.lambda,
             self.variance,
         );
-        self.transformed_points = transform_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
+        self.transformed_points =
+            compute_transformed_point_cloud(&self.source_points, &gaussian_kernel, &self.W);
         (self.variance, self.change_in_variance) = update_variance(
             &self.target_points,
             &self.transformed_points,
@@ -178,7 +182,7 @@ fn solve_matrices(
     stack(Axis(1), &solutions[..]).unwrap()
 }
 
-fn transform_point_cloud(
+fn compute_transformed_point_cloud(
     source_points: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     gaussian_kernel: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     W: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
