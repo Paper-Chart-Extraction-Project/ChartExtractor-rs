@@ -232,21 +232,21 @@ fn update_variance(
 }
 
 /// A helper function for converting a 2d array into a string representation.
-fn array_to_string(arr: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
-    let mut arr_str = String::from("[");
-    let arr = arr.clone();
-    let chunks = arr.into_iter().chunks(2);
-    let mut p_str: Vec<String> = Vec::new();
+fn array_to_string(array: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> String {
+    let mut array_str = String::from("[");
+    let array = array.clone();
+    let chunks = array.into_iter().chunks(2);
+    let mut point_str: Vec<String> = Vec::new();
     for chunk in &chunks {
-        let p: Vec<f32> = chunk.collect::<Vec<f32>>();
-        p_str.push(String::from(format!(
+        let point: Vec<f32> = chunk.collect::<Vec<f32>>();
+        point_str.push(String::from(format!(
             "{{\"x\": {}, \"y\": {}}}",
-            p[0], p[1]
+            point[0], point[1]
         )));
     }
-    let p_str: String = p_str.join(", ");
-    arr_str.push_str(&p_str);
+    let point_str: String = point_str.join(", ");
+    array_str.push_str(&point_str);
 
-    arr_str.push_str("]");
-    arr_str
+    array_str.push_str("]");
+    array_str
 }
