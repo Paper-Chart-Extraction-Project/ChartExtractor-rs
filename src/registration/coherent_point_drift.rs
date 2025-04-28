@@ -7,22 +7,40 @@ use std::f32::EPSILON;
 use std::f32::consts::PI;
 
 struct CoherentPointDriftTransform {
+    /// The points to try to move the source towards.
     target_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    /// The points to move towards the target points. May contain outliers or
+    /// missing points.
     source_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    /// The tradeoff between the goodness of maximum likelihood fit and regularlization.
     lambda: f32,
+    /// The width of the smoothing Gaussian filter.
     beta: f32,
+    /// The source points after they have been moved by the cpd algorithm.
     transformed_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    /// The variance of the Gaussian mixture model.
     variance: f32,
+    /// A parameter that can end the iteration process early if the change in variance
+    /// is less than the tolerance.
     tolerance: f32,
+    /// The weight of the uniform distribution. Must be between 0 and 1.
+    /// See the coherent point drift paper for more details.
     weight_of_uniform_dist: f32,
+    /// The maximum number of iterations to perform.
     max_iterations: u32,
+    /// The change in variance between the previous iteration and the current one.
     change_in_variance: f32,
+    /// An MxN matrix containing the probability that a point from the target_points
+    /// set matches with a point from the source_points set.
     probability_of_match: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    /// A matrix which, when linearly combined with the gaussian kernel, contains
+    /// A matrix which, when linearly combined with the Gaussian kernel, contains
     /// the optimal displacement field to align the source points to the target.
     w_coefs: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    history: Vec<String>, // Contains all the transformed_points matrices for all iterations.
-    debug: bool,          // Whether or not to take a history.
+    /// A vector of json formatted lists containing the transformed_points at all
+    /// iterations. Use with caution, and set max_iterations low to start.
+    history: Vec<String>,
+    /// Whether or not to record the history of the transformed points.
+    debug: bool,
 }
 
 impl CoherentPointDriftTransform {
