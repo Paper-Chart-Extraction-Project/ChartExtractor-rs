@@ -132,20 +132,20 @@ impl CoherentPointDriftTransform {
 
 /// Computes the squared euclidean distance between all vectors in A and B.
 fn compute_squared_euclidean_distance(
-    A: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
-    B: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_a: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
+    matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let A_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
-        (1, A.dim().0, A.dim().1),
-        A.clone().into_raw_vec_and_offset().0,
+    let matrix_a_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
+        (1, matrix_a.dim().0, matrix_a.dim().1),
+        matrix_a.clone().into_raw_vec_and_offset().0,
     )
     .unwrap();
-    let B_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
-        (B.dim().0, 1, B.dim().1),
-        B.clone().into_raw_vec_and_offset().0,
+    let matrix_b_3d: ArrayBase<OwnedRepr<f32>, Dim<[usize; 3]>> = Array::from_shape_vec(
+        (matrix_b.dim().0, 1, matrix_b.dim().1),
+        matrix_b.clone().into_raw_vec_and_offset().0,
     )
     .unwrap();
-    (A_3d - B_3d).powi(2).sum_axis(Axis(2))
+    (matrix_a_3d - matrix_b_3d).powi(2).sum_axis(Axis(2))
 }
 
 /// Computes the gaussian kernel for CPD.
