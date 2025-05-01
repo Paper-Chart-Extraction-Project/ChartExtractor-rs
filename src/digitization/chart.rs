@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
 
-/// Hour and minute.
-struct Time ( u32, u32 );
-
 /// An enum for single digit positive whole numbers.
 enum SingleDigit {
     Zero = 0,
@@ -40,6 +37,9 @@ struct MedicationSection (
 
 /// Contains the 2 rows of the fluid/blood product section.
 struct FluidBloodProductSection ( Option<DosingRecord>, Option<DosingRecord> );
+
+/// Hour and minute.
+struct Time { hour: u32, minute: u32 }
 
 /// A struct containing all of the intraoperative chart's data.
 struct IntraoperativeChart {
