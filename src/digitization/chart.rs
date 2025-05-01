@@ -104,7 +104,7 @@ struct PreoperativePostoperativeChart {
     aldrete_score: u32
 }
 
-struct Chart {
+pub struct Chart {
     intraoperative_charts: Vec<IntraoperativeChart>,
     preoperative_postoperative_chart: PreoperativePostoperativeChart
 }
