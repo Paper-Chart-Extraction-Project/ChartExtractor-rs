@@ -56,23 +56,53 @@ struct IntraoperativeChart {
     systolic_bp: HashMap<String, u32>,
     diastolic_bp: HashMap<String, u32>,
     heart_rate: HashMap<String, u32>,
-    /// Oxygen saturation.
-    spo2: HashMap<String, u32>,
-    /// End tidal carbon dioxide.
-    etco2: HashMap<String, u32>,
-    /// Fraction of inspired oxygen.
-    fio2: HashMap<String, u32>,
+    oxygen_saturation: HashMap<String, u32>,
+    end_tidal_carbon_dioxide: HashMap<String, u32>,
+    fraction_of_inspired_oxygen: HashMap<String, u32>,
     temperature: HashMap<String, f32>,
     tidal_volume: HashMap<String, u32>,
     respiratory_rate: HashMap<String, u32>,
     urine_output: HashMap<String, u32>,
     blood_loss: HashMap<String, u32>,
-    /// The endotracheal tube size.
-    ett_n: f32
+    endotracheal_tube_size: f32
+}
+
+/// The vitals
+struct Vitals {
+    systolic: u32,
+    diastolic: u32,
+    heart_rate: u32,
+    respiratory_rate: u32,
+    oxygen_saturation: u32
 }
 
 /// A stuct containing all of the preoperative/postoperative chart's data.
-struct PreoperativePostoperativeChart { }
+struct PreoperativePostoperativeChart {
+    time_of_assessment_day: u32,
+    time_of_assessment_month: u32,
+    time_of_assessment_year: u32,
+    time_of_assessment_hour: u32,
+    time_of_assessment_minute: u32,
+    checkboxes: HashMap<String, bool>,
+    age: u32,
+    height: u32,
+    weight: u32,
+    preoperative_vitals: Vitals,
+    postoperative_vitals: Vitals,
+    hemoglobin: f32,
+    hematocrit: f32,
+    platelets: u32,
+    sodium: u32,
+    potassium: f32,
+    chloride: u32,
+    urea: f32,
+    creatinine: f32,
+    calcium: f32,
+    magnesium: f32,
+    phosphate: f32,
+    albumin: u32,
+    aldrete_score: u32
+}
 
 struct Chart {
     intraoperative_charts: Vec<IntraoperativeChart>,
