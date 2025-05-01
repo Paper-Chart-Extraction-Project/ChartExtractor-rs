@@ -25,9 +25,9 @@ struct DosingRecord ( Code, HashMap<String, u32> );
 
 /// Contains all 9 rows of the medications section.
 struct MedicationSection ( 
-    Option<DosingRecord>,
-    Option<DosingRecord>,
-    Option<DosingRecord>,
+    Option<DosingRecord>, // always propofol.
+    Option<DosingRecord>, // always rocuronium.
+    Option<DosingRecord>, // always fentanyl.
     Option<DosingRecord>,
     Option<DosingRecord>,
     Option<DosingRecord>,
@@ -43,10 +43,30 @@ struct FluidBloodProductSection ( Option<DosingRecord>, Option<DosingRecord> );
 struct IntraoperativeChart {
     /// Which intraoperative page we are on. Some surgeries span multiple pages.
     page_num: u32,
-    medications: Vec<DosingRecord>
+    medications: MedicationSection,
+    inhaled_volatile_gas: HashMap<String, u32>,
+    fluid_and_blood_products: FluidBloodProductSection,
+    checkboxes: HashMap<String, bool>,
+    systolic_bp: HashMap<String, u32>,
+    diastolic_bp: HashMap<String, u32>,
+    heart_rate: HashMap<String, u32>,
+    /// Oxygen saturation.
+    spo2: HashMap<String, u32>,
+    /// End tidal carbon dioxide.
+    etco2: HashMap<String, u32>,
+    /// Fraction of inspired oxygen.
+    fio2: HashMap<String, u32>,
+    temperature: HashMap<String, f32>,
+    tidal_volume: HashMap<String, u32>,
+    respiratory_rate: HashMap<String, u32>,
+    urine_output: HashMap<String, u32>,
+    blood_loss: HashMap<String, u32>,
+    /// The endotracheal tube size.
+    ett_n: f32
 }
 
 /// A stuct containing all of the preoperative/postoperative chart's data.
+struct PreoperativePostoperativeChart { }
 
 struct Chart {
     intraoperative_charts: Vec<IntraoperativeChart>,
