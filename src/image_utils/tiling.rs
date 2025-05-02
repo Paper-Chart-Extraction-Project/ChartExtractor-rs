@@ -183,7 +183,6 @@ pub fn pad_image_to_fit_tiling_params(
             tile_size,
             proportion,
         );
-        println!("{:?}, {:?}", new_width, new_height);
         let rgb_image: RgbImage = convert_array_view_to_rgb_image(image);
         return pad_right_bottom_img_rbg8(rgb_image, new_width, new_height).unwrap();
     }
