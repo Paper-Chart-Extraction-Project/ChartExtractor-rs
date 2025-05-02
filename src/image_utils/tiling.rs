@@ -325,4 +325,64 @@ mod tests {
             }
         }
     }
+    
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_width() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 2000;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion { numerator: 1, denominator: 2 };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width, image_height, tile_size, proportion
+        );
+        assert_eq!(padding_params, (1500, 2250));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_height() {
+        let image_width: u32 = 2000;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion { numerator: 1, denominator: 2 };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width, image_height, tile_size, proportion
+        );
+        assert_eq!(padding_params, (2250, 1500));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_image() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion { numerator: 1, denominator: 1 };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width, image_height, tile_size, proportion
+        );
+        assert_eq!(padding_params, (1500, 1500));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_no_padding_needed() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 500;
+        let proportion: OverlapProportion = OverlapProportion { numerator: 1, denominator: 2 };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width, image_height, tile_size, proportion
+        );
+        assert_eq!(padding_params, (image_width, image_height));
+    }
+     
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_standard_usage() {
+        let image_width: u32 = 1200;
+        let image_height: u32 = 1200;
+        let tile_size: u32 = 500;
+        let proportion: OverlapProportion = OverlapProportion { numerator: 1, denominator: 2 };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width, image_height, tile_size, proportion
+        );
+        assert_eq!(padding_params, (1250, 1250));
+    }
 }
