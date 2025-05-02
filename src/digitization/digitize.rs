@@ -18,3 +18,6 @@ pub fn digitize(
     Err("")
 }
 
+fn run_document_landmark_model() -> Vec<Detection<BoundingBox>> {
+    vec![]
+}
