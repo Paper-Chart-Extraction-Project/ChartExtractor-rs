@@ -1,3 +1,6 @@
+use crate::image_utils::image_conversion::convert_array_view_to_rgb_image;
+use crate::image_utils::padding::pad_right_bottom_img_rbg8;
+use image::RgbImage;
 use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr, s};
 use std::fmt;
 
@@ -85,6 +88,12 @@ impl fmt::Display for OverlapProportion {
     }
 }
 
+impl From<OverlapProportion> for f32 {
+    fn from(overlap_proportion: OverlapProportion) -> f32 {
+        overlap_proportion.numerator as f32 / overlap_proportion.denominator as f32
+    }
+}
+
 pub fn validate_tiling_parameters(
     proportion: OverlapProportion,
     tile_size: u32,
@@ -151,6 +160,56 @@ pub fn tile_image(
         tiles.push(row_of_tiles);
     }
     Ok(tiles)
+}
+
+/// Pads an image to the smallest size that is larger than the image's original
+/// size if it cannot be tiled with the tiling parameters supplied.
+pub fn pad_image_to_fit_tiling_params(
+    image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
+    tile_size: u32,
+    proportion: OverlapProportion,
+) -> RgbImage {
+    let image = image.view();
+    let image_width: u32 = image.shape()[2] as u32;
+    let image_height: u32 = image.shape()[3] as u32;
+    let params_are_valid: bool =
+        validate_tiling_parameters(proportion, tile_size, image_width, image_height).is_none();
+    if params_are_valid {
+        return convert_array_view_to_rgb_image(image);
+    } else {
+        let (new_width, new_height) = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        println!("{:?}, {:?}", new_width, new_height);
+        let rgb_image: RgbImage = convert_array_view_to_rgb_image(image);
+        return pad_right_bottom_img_rbg8(rgb_image, new_width, new_height).unwrap();
+    }
+}
+
+/// Helper fn for pad_image_to_fit_tiling_params that determines the smallest
+/// image size that is larger than the current image which can be tiled with
+/// the given tiling parameters
+fn find_smallest_img_size_large_enough_to_tile(
+    original_image_width: u32,
+    original_image_height: u32,
+    tile_size: u32,
+    overlap_proportion: OverlapProportion,
+) -> (u32, u32) {
+    let proportion_f32: f32 = overlap_proportion.into();
+    let image_width: f32 = original_image_width as f32;
+    let image_height: f32 = original_image_height as f32;
+    let new_width: u32 = {
+        let multiplier: f32 = (image_width / ((tile_size as f32) * proportion_f32)).ceil();
+        (multiplier * tile_size as f32 * proportion_f32) as u32
+    };
+    let new_height: u32 = {
+        let multiplier: f32 = (image_height / ((tile_size as f32) * proportion_f32)).ceil();
+        (multiplier * tile_size as f32 * proportion_f32) as u32
+    };
+    (new_width, new_height)
 }
 
 #[cfg(test)]
@@ -264,5 +323,95 @@ mod tests {
                 assert_eq!(rgb_tile, true_rgb_tile);
             }
         }
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_width() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 2000;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion {
+            numerator: 1,
+            denominator: 2,
+        };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        assert_eq!(padding_params, (1500, 2250));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_height() {
+        let image_width: u32 = 2000;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion {
+            numerator: 1,
+            denominator: 2,
+        };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        assert_eq!(padding_params, (2250, 1500));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_tile_size_larger_than_image() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 1500;
+        let proportion: OverlapProportion = OverlapProportion {
+            numerator: 1,
+            denominator: 1,
+        };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        assert_eq!(padding_params, (1500, 1500));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_no_padding_needed() {
+        let image_width: u32 = 1250;
+        let image_height: u32 = 1250;
+        let tile_size: u32 = 500;
+        let proportion: OverlapProportion = OverlapProportion {
+            numerator: 1,
+            denominator: 2,
+        };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        assert_eq!(padding_params, (image_width, image_height));
+    }
+
+    #[test]
+    fn test_find_smallest_img_size_large_enough_to_tile_standard_usage() {
+        let image_width: u32 = 1200;
+        let image_height: u32 = 1200;
+        let tile_size: u32 = 500;
+        let proportion: OverlapProportion = OverlapProportion {
+            numerator: 1,
+            denominator: 2,
+        };
+        let padding_params = find_smallest_img_size_large_enough_to_tile(
+            image_width,
+            image_height,
+            tile_size,
+            proportion,
+        );
+        assert_eq!(padding_params, (1250, 1250));
     }
 }

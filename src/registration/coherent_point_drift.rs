@@ -90,7 +90,7 @@ impl CoherentPointDriftTransform {
         weight_of_uniform_dist: Option<f32>,
         tolerance: Option<f32>,
         max_iterations: Option<u32>,
-        debug: Option<bool>
+        debug: Option<bool>,
     ) -> CoherentPointDriftTransform {
         let target_point_array: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = {
             let mut flattened_point_vec = Vec::new();
@@ -116,7 +116,7 @@ impl CoherentPointDriftTransform {
             weight_of_uniform_dist,
             tolerance,
             max_iterations,
-            debug
+            debug,
         )
     }
 
@@ -141,7 +141,8 @@ impl CoherentPointDriftTransform {
     }
 
     fn expectation(&mut self) {
-        let mut new_probabilities = compute_squared_distance(&self.target_points, &self.transformed_points);
+        let mut new_probabilities =
+            compute_squared_distance(&self.target_points, &self.transformed_points);
         new_probabilities = (-new_probabilities / (2_f32 * self.variance)).exp();
         let c = {
             let num_target_points: usize = self.target_points.dim().0;
