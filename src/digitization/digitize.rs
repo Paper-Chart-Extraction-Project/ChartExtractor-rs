@@ -10,20 +10,20 @@ use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::path::Path;
 
 
-struct BoundingBoxModelParameters {
-    name: String,
-    model_path: Box<Path>,
-    class_names_path: Box<Path>,
-    input_width: usize,
-    input_height: usize,
-    tile_size: u32,
-    overlap_proportion: OverlapProportion,
-    confidence_threshold: f32,
-    nms_threshold: f32,
+pub struct BoundingBoxModelParameters<'a> {
+    pub name: String,
+    pub model_path: &'a Path,
+    pub class_names_path: &'a Path,
+    pub input_width: usize,
+    pub input_height: usize,
+    pub tile_size: u32,
+    pub overlap_proportion: OverlapProportion,
+    pub confidence_threshold: f32,
+    pub nms_threshold: f32,
 }
 
-struct DigitzationParameters {
-    document_landmark_model_parameters: BoundingBoxModelParameters
+struct DigitzationParameters<'a> {
+    document_landmark_model_parameters: BoundingBoxModelParameters<'a>
 }
 
 pub fn digitize(
@@ -37,7 +37,7 @@ pub fn digitize(
     Err("")
 }
 
-fn run_yolov11_bounding_box_model(
+pub fn run_yolov11_bounding_box_model(
     image: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     model_parameters: BoundingBoxModelParameters,
     use_adaptive_padding: bool,
