@@ -22,7 +22,6 @@ pub fn convert_array_view_to_rgb_image(
                 .round()
                 .min(255.0)
                 .max(0.0) as u8;
-            println!("r: {:?}, g: {:?}, b: {:?}", r, g, b);
             rgb_image.put_pixel(x as u32, y as u32, Rgb([r, g, b]));
         }
     }
