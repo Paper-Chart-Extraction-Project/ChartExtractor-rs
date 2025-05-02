@@ -2,10 +2,15 @@ use crate::annotations::detection::Detection;
 use crate::annotations::bounding_box::BoundingBox;
 use crate::digitization::chart::Chart;
 use crate::image_utils::image_io::read_image_as_array4;
+use crate::image_utils::tiling::OverlapProportion;
 use std::path::Path;
 
 
-struct DigitzationParameters { }
+struct DigitzationParameters {
+    document_landmark_model_path: Path,
+    document_landmark_tile_size: u32,
+    document_landmark_overlap_proportion: OverlapProportion
+}
 
 pub fn digitize(
     preop_postop_image_filepath: &Path,
@@ -18,6 +23,6 @@ pub fn digitize(
     Err("")
 }
 
-fn run_document_landmark_model() -> Vec<Detection<BoundingBox>> {
+fn detect_document_landmarks() -> Vec<Detection<BoundingBox>> {
     vec![]
 }
