@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 /// An enum for single digit positive whole numbers.
 enum SingleDigit {
     Zero = 0,
@@ -16,14 +15,14 @@ enum SingleDigit {
 }
 
 /// A drug or fluid code is a three digit number.
-struct Code (SingleDigit, SingleDigit, SingleDigit);
+struct Code(SingleDigit, SingleDigit, SingleDigit);
 
 /// Contains the Code for the drug or fluid, along with a HashMap mapping the
 /// timestamp to the dose.
-struct DosingRecord ( Code, HashMap<String, u32> );
+struct DosingRecord(Code, HashMap<String, u32>);
 
 /// Contains all 9 rows of the medications section.
-struct MedicationSection ( 
+struct MedicationSection(
     Option<DosingRecord>, // always propofol.
     Option<DosingRecord>, // always rocuronium.
     Option<DosingRecord>, // always fentanyl.
@@ -32,14 +31,17 @@ struct MedicationSection (
     Option<DosingRecord>,
     Option<DosingRecord>,
     Option<DosingRecord>,
-    Option<DosingRecord>
+    Option<DosingRecord>,
 );
 
 /// Contains the 2 rows of the fluid/blood product section.
-struct FluidBloodProductSection ( Option<DosingRecord>, Option<DosingRecord> );
+struct FluidBloodProductSection(Option<DosingRecord>, Option<DosingRecord>);
 
 /// Hour and minute.
-struct Time { hour: u32, minute: u32 }
+struct Time {
+    hour: u32,
+    minute: u32,
+}
 
 /// A struct containing all of the intraoperative chart's data.
 struct IntraoperativeChart {
@@ -64,7 +66,7 @@ struct IntraoperativeChart {
     respiratory_rate: HashMap<String, u32>,
     urine_output: HashMap<String, u32>,
     blood_loss: HashMap<String, u32>,
-    endotracheal_tube_size: f32
+    endotracheal_tube_size: f32,
 }
 
 /// The vitals
@@ -73,7 +75,7 @@ struct Vitals {
     diastolic: u32,
     heart_rate: u32,
     respiratory_rate: u32,
-    oxygen_saturation: u32
+    oxygen_saturation: u32,
 }
 
 /// A stuct containing all of the preoperative/postoperative chart's data.
@@ -101,10 +103,10 @@ struct PreoperativePostoperativeChart {
     magnesium: f32,
     phosphate: f32,
     albumin: u32,
-    aldrete_score: u32
+    aldrete_score: u32,
 }
 
 pub struct Chart {
     intraoperative_charts: Vec<IntraoperativeChart>,
-    preoperative_postoperative_chart: PreoperativePostoperativeChart
+    preoperative_postoperative_chart: PreoperativePostoperativeChart,
 }
