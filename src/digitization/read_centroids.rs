@@ -6,6 +6,7 @@ use std::io::BufReader;
 use std::path::Path;
 
 
+/// Reads a HashMap of named points (the names are the keys) from a json file.
 pub fn read_centroids_from_json(filepath: &Path) -> HashMap<String, Point> {
     let file = File::open(filepath).unwrap();
     let reader = BufReader::new(file);
