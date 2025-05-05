@@ -26,6 +26,12 @@ struct DigitzationParameters<'a> {
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
     checkbox_model_parameters: BoundingBoxModelParameters<'a>,
+    intraop_document_landmarks_json_filepath: &'a Path,
+    preop_postop_document_landmarks_json_filepath: &'a Path,
+    intraop_checkboxes_centroids_json_filepath: &'a Path,
+    preop_postop_checkboxes_centroids_json_filepath: &'a Path,
+    intraop_number_boxes_json_filepath: &'a Path,
+    preop_postop_number_boxes_json_filepath: &'a Path,
 }
 
 pub fn digitize(
