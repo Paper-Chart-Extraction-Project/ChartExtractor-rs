@@ -1,4 +1,4 @@
-use crate::annotations::bounding_box::BoundingBox;
+use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
 use crate::annotations::point::Point;
 use crate::digitization::chart::Chart;
@@ -8,6 +8,8 @@ use crate::image_utils::tiling::{OverlapProportion, pad_image_to_fit_tiling_para
 use crate::object_detection::object_detection_utils::{read_classes_txt_file, tile_and_predict};
 use crate::object_detection::yolov11_bounding_box::Yolov11BoundingBox;
 use ndarray::{ArrayBase, Dim, OwnedRepr};
+use std::collections::HashMap;
+use std::fmt::Display;
 use std::path::Path;
 
 pub struct BoundingBoxModelParameters<'a> {
@@ -27,12 +29,12 @@ struct DigitzationParameters<'a> {
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
     checkbox_model_parameters: BoundingBoxModelParameters<'a>,
-    intraop_document_landmarks_centroids: Vec<Point>,
-    preop_postop_document_landmarks_centroids: Vec<Point>,
-    intraop_checkboxes_centroids: Vec<Point>,
-    preop_postop_checkboxes_centroids: Vec<Point>,
-    intraop_number_boxes_centroids: Vec<Point>,
-    preop_postop_number_boxes_centroids: Vec<Point>,
+    intraop_document_landmarks_centroids: HashMap<String, Point>,
+    preop_postop_document_landmarks_centroids: HashMap<String, Point>,
+    intraop_checkboxes_centroids: HashMap<String, Point>,
+    preop_postop_checkboxes_centroids: HashMap<String, Point>,
+    intraop_number_boxes_centroids: HashMap<String, Point>,
+    preop_postop_number_boxes_centroids: HashMap<String, Point>,
 }
 
 pub fn digitize(
@@ -74,7 +76,7 @@ pub fn digitize(
         &parameters.checkbox_model_parameters,
         use_adaptive_padding,
     );
-
+    
     Err("")
 }
 
@@ -111,4 +113,18 @@ pub fn run_yolov11_bounding_box_model(
         model_parameters.nms_threshold,
     )
     .unwrap()
+}
+
+pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display> (
+    ground_truth_centroids: HashMap<String, Point>,
+    detections: Vec<Detection<T>>
+) -> Vec<Detection<T>> {
+    vec![]
+}
+
+pub fn match_points<T: BoundingBoxGeometry + Display> (
+    ground_truth_centroids: HashMap<String, Point>,
+    detections: Vec<Detection<T>>
+) -> Vec<((String, Point), Detection<T>)> {
+    vec![]
 }
