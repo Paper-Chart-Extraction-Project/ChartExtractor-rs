@@ -7,7 +7,7 @@ use ndarray_linalg::Solve;
 use std::f32::EPSILON;
 use std::f32::consts::PI;
 
-struct CoherentPointDriftTransform {
+pub struct CoherentPointDriftTransform {
     /// The points to try to move the source towards.
     target_points: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     /// The points to move towards the target points. May contain outliers or
