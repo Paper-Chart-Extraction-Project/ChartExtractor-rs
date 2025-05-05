@@ -25,6 +25,7 @@ pub struct BoundingBoxModelParameters<'a> {
 struct DigitzationParameters<'a> {
     intraop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
+    handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
 }
 
 pub fn digitize(
@@ -37,12 +38,22 @@ pub fn digitize(
     let intraop_image = read_image_as_array4(intraop_image_filepath);
     let intraop_document_landmarks = run_yolov11_bounding_box_model(
         &intraop_image,
-        parameters.intraop_document_landmark_model_parameters,
+        &parameters.intraop_document_landmark_model_parameters,
         use_adaptive_padding,
     );
     let preop_postop_document_landmarks = run_yolov11_bounding_box_model(
         &intraop_image,
-        parameters.preop_postop_document_landmark_model_parameters,
+        &parameters.preop_postop_document_landmark_model_parameters,
+        use_adaptive_padding,
+    );
+    let intraop_handwritten_numbers = run_yolov11_bounding_box_model(
+        &intraop_image,
+        &parameters.handwritten_numbers_model_parameters,
+        use_adaptive_padding,
+    );
+    let preop_postop_handwritten_numbers = run_yolov11_bounding_box_model(
+        &intraop_image,
+        &parameters.handwritten_numbers_model_parameters,
         use_adaptive_padding,
     );
     Err("")
@@ -50,7 +61,7 @@ pub fn digitize(
 
 pub fn run_yolov11_bounding_box_model(
     image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
-    model_parameters: BoundingBoxModelParameters,
+    model_parameters: &BoundingBoxModelParameters,
     use_adaptive_padding: bool,
 ) -> Vec<Detection<BoundingBox>> {
     let image = image.clone();
@@ -62,7 +73,7 @@ pub fn run_yolov11_bounding_box_model(
         class_names,
         model_parameters.input_width,
         model_parameters.input_height,
-        model_parameters.name
+        model_parameters.name.clone(),
     ).unwrap();
     if use_adaptive_padding {
         let padded_image = pad_image_to_fit_tiling_params(
