@@ -1,5 +1,5 @@
-use crate::annotations::detection::Detection;
 use crate::annotations::bounding_box::BoundingBox;
+use crate::annotations::detection::Detection;
 use crate::digitization::chart::Chart;
 use crate::image_utils::image_conversion::convert_rgb_image_to_owned_array;
 use crate::image_utils::image_io::read_image_as_array4;
@@ -8,7 +8,6 @@ use crate::object_detection::object_detection_utils::{read_classes_txt_file, til
 use crate::object_detection::yolov11_bounding_box::Yolov11BoundingBox;
 use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::path::Path;
-
 
 pub struct BoundingBoxModelParameters<'a> {
     pub name: String,
@@ -33,7 +32,7 @@ pub fn digitize(
     preop_postop_image_filepath: &Path,
     intraop_image_filepath: &Path,
     parameters: DigitzationParameters,
-    use_adaptive_padding: bool
+    use_adaptive_padding: bool,
 ) -> Result<Chart, &'static str> {
     let preop_postop_image = read_image_as_array4(preop_postop_image_filepath);
     let intraop_image = read_image_as_array4(intraop_image_filepath);
@@ -76,16 +75,16 @@ pub fn run_yolov11_bounding_box_model(
     use_adaptive_padding: bool,
 ) -> Vec<Detection<BoundingBox>> {
     let image = image.clone();
-    let class_names: Vec<String> = read_classes_txt_file(
-        &model_parameters.class_names_path
-    ).unwrap();
+    let class_names: Vec<String> =
+        read_classes_txt_file(&model_parameters.class_names_path).unwrap();
     let model: Yolov11BoundingBox = Yolov11BoundingBox::new(
         &model_parameters.model_path,
         class_names,
         model_parameters.input_width,
         model_parameters.input_height,
         model_parameters.name.clone(),
-    ).unwrap();
+    )
+    .unwrap();
     if use_adaptive_padding {
         let padded_image = pad_image_to_fit_tiling_params(
             &image,
@@ -100,6 +99,7 @@ pub fn run_yolov11_bounding_box_model(
         model_parameters.tile_size,
         model_parameters.overlap_proportion,
         model_parameters.confidence_threshold,
-        model_parameters.nms_threshold
-    ).unwrap()
+        model_parameters.nms_threshold,
+    )
+    .unwrap()
 }
