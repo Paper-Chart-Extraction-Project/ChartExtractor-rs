@@ -1,7 +1,7 @@
 use crate::annotations::point::Point;
 use std::fmt;
 
-struct NamedPoint {
+pub struct NamedPoint {
     pub name: String,
     point: Point
 }
