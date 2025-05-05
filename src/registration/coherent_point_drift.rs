@@ -196,9 +196,36 @@ impl CoherentPointDriftTransform {
     /// between the source and the target points.
     ///
     /// Returns a vector of tuples of 2 indices, the first belonging to a point
-    /// in the target set and the second in the source set.
+    /// in the source set and the second in the target set.
     pub fn generate_matching(&self) -> Vec<(usize, usize)> {
-        vec![]
+        fn generate_matching_inner(
+            probs: Vec<((usize, usize), &f32)>,
+            mut matches: Vec<(usize, usize)>,
+        ) -> Vec<(usize, usize)> {
+            if probs == vec![] {
+                return matches
+            }
+            let (max_index, max_value) = probs
+                .iter()
+                .max_by(|&&(_, &a), &&(_, &b)| {
+                    a.partial_cmp(&b).unwrap_or(std::cmp::Ordering::Equal)
+                })
+                .unwrap();
+            matches.push(*max_index);
+            let probs: Vec<((usize, usize), &f32)> = probs
+                .clone()
+                .into_iter()
+                .filter(|((row, col), _)| *row != max_index.0 && *col != max_index.1)
+                .collect::<Vec<((usize, usize), &f32)>>();
+            generate_matching_inner(probs, matches)
+        }
+        let indexed_probabilities: Vec<((usize, usize), &f32)> = self.probability_of_match
+            .indexed_iter()
+            .collect::<Vec<((usize, usize), &f32)>>();
+        let matching: Vec<(usize, usize)> = 
+            generate_matching_inner(indexed_probabilities, Vec::new());
+        println!("{:?}", matching);
+        matching
     }
 }
 
@@ -325,4 +352,50 @@ fn array_to_json_string(array: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>) -> S
 
     array_str.push_str("]");
     array_str
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_matching() {
+        let small_delta: f32 = 0.2;
+        let source_points = Array::from_shape_vec(
+            (3, 2),
+            vec![
+                1.0 - small_delta,
+                0.0 + small_delta,
+                0.5 + small_delta,
+                0.5 - small_delta,
+                0.0 + small_delta,
+                0.0 - small_delta,
+            ]
+        ).unwrap();
+        let target_points = Array::from_shape_vec(
+            (3, 2),
+            vec![
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.5,
+                0.5,
+            ]
+        ).unwrap();
+        let mut cpd_transform = CoherentPointDriftTransform::new(
+            target_points,
+            source_points,
+            0.01,
+            20.0,
+            Some(0.0),
+            None,
+            Some(100),
+            Some(true),
+        );
+        cpd_transform.register();
+        let matches = cpd_transform.generate_matching();
+        let true_matches = vec![(2, 0), (0, 1), (1, 2)];
+        assert_eq!(matches, true_matches)
+    }
 }
