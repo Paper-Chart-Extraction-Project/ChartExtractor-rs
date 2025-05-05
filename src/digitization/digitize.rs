@@ -26,6 +26,7 @@ struct DigitzationParameters<'a> {
     intraop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
+    checkbox_model_parameters: BoundingBoxModelParameters<'a>,
 }
 
 pub fn digitize(
@@ -54,6 +55,16 @@ pub fn digitize(
     let preop_postop_handwritten_numbers = run_yolov11_bounding_box_model(
         &intraop_image,
         &parameters.handwritten_numbers_model_parameters,
+        use_adaptive_padding,
+    );
+    let intraop_checkboxes = run_yolov11_bounding_box_model(
+        &intraop_image,
+        &parameters.checkbox_model_parameters,
+        use_adaptive_padding,
+    );
+    let preop_postop_checkboxes = run_yolov11_bounding_box_model(
+        &preop_postop_image,
+        &parameters.checkbox_model_parameters,
         use_adaptive_padding,
     );
     Err("")
