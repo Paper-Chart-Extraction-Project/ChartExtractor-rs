@@ -23,25 +23,37 @@ pub struct BoundingBoxModelParameters<'a> {
 }
 
 struct DigitzationParameters<'a> {
-    document_landmark_model_parameters: BoundingBoxModelParameters<'a>
+    intraop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
+    preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
 }
 
 pub fn digitize(
     preop_postop_image_filepath: &Path,
     intraop_image_filepath: &Path,
-    parameters: DigitzationParameters
+    parameters: DigitzationParameters,
+    use_adaptive_padding: bool
 ) -> Result<Chart, &'static str> {
     let preop_postop_image = read_image_as_array4(preop_postop_image_filepath);
     let intraop_image = read_image_as_array4(intraop_image_filepath);
-
+    let intraop_document_landmarks = run_yolov11_bounding_box_model(
+        &intraop_image,
+        parameters.intraop_document_landmark_model_parameters,
+        use_adaptive_padding,
+    );
+    let preop_postop_document_landmarks = run_yolov11_bounding_box_model(
+        &intraop_image,
+        parameters.preop_postop_document_landmark_model_parameters,
+        use_adaptive_padding,
+    );
     Err("")
 }
 
 pub fn run_yolov11_bounding_box_model(
-    image: ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
+    image: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 4]>>,
     model_parameters: BoundingBoxModelParameters,
     use_adaptive_padding: bool,
 ) -> Vec<Detection<BoundingBox>> {
+    let image = image.clone();
     let class_names: Vec<String> = read_classes_txt_file(
         &model_parameters.class_names_path
     ).unwrap();
@@ -53,12 +65,12 @@ pub fn run_yolov11_bounding_box_model(
         model_parameters.name
     ).unwrap();
     if use_adaptive_padding {
-        let image = pad_image_to_fit_tiling_params(
+        let padded_image = pad_image_to_fit_tiling_params(
             &image,
             model_parameters.tile_size,
             model_parameters.overlap_proportion,
         );
-        let image = convert_rgb_image_to_owned_array(image);
+        let padded_image = convert_rgb_image_to_owned_array(padded_image);
     }
     tile_and_predict(
         &model,
