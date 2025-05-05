@@ -191,6 +191,15 @@ impl CoherentPointDriftTransform {
             self.tolerance,
         );
     }
+    
+    /// Uses the probability_of_match matrix to get a highest-likelihood match
+    /// between the source and the target points.
+    ///
+    /// Returns a vector of tuples of 2 indices, the first belonging to a point
+    /// in the target set and the second in the source set.
+    pub fn generate_matching(&self) -> Vec<(usize, usize)> {
+        vec![]
+    }
 }
 
 /// Computes the squared euclidean distance between all vectors in A and B.

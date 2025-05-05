@@ -121,10 +121,3 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display> (
 ) -> Vec<Detection<T>> {
     vec![]
 }
-
-pub fn match_points<T: BoundingBoxGeometry + Display> (
-    ground_truth_centroids: HashMap<String, Point>,
-    detections: Vec<Detection<T>>
-) -> Vec<((String, Point), Detection<T>)> {
-    vec![]
-}
