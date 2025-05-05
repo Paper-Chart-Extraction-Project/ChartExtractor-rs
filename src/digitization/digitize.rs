@@ -1,5 +1,6 @@
 use crate::annotations::bounding_box::BoundingBox;
 use crate::annotations::detection::Detection;
+use crate::annotations::point::Point;
 use crate::digitization::chart::Chart;
 use crate::image_utils::image_conversion::convert_rgb_image_to_owned_array;
 use crate::image_utils::image_io::read_image_as_array4;
@@ -26,12 +27,12 @@ struct DigitzationParameters<'a> {
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
     checkbox_model_parameters: BoundingBoxModelParameters<'a>,
-    intraop_document_landmarks_json_filepath: &'a Path,
-    preop_postop_document_landmarks_json_filepath: &'a Path,
-    intraop_checkboxes_centroids_json_filepath: &'a Path,
-    preop_postop_checkboxes_centroids_json_filepath: &'a Path,
-    intraop_number_boxes_json_filepath: &'a Path,
-    preop_postop_number_boxes_json_filepath: &'a Path,
+    intraop_document_landmarks_centroids: Vec<Point>,
+    preop_postop_document_landmarks_centroids: Vec<Point>,
+    intraop_checkboxes_centroids: Vec<Point>,
+    preop_postop_checkboxes_centroids: Vec<Point>,
+    intraop_number_boxes_centroids: Vec<Point>,
+    preop_postop_number_boxes_centroids: Vec<Point>,
 }
 
 pub fn digitize(
@@ -42,6 +43,7 @@ pub fn digitize(
 ) -> Result<Chart, &'static str> {
     let preop_postop_image = read_image_as_array4(preop_postop_image_filepath);
     let intraop_image = read_image_as_array4(intraop_image_filepath);
+    
     let intraop_document_landmarks = run_yolov11_bounding_box_model(
         &intraop_image,
         &parameters.intraop_document_landmark_model_parameters,
@@ -72,6 +74,7 @@ pub fn digitize(
         &parameters.checkbox_model_parameters,
         use_adaptive_padding,
     );
+
     Err("")
 }
 
