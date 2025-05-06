@@ -191,7 +191,7 @@ impl CoherentPointDriftTransform {
             self.tolerance,
         );
     }
-    
+
     /// Uses the probability_of_match matrix to get a highest-likelihood match
     /// between the source and the target points.
     ///
@@ -203,7 +203,7 @@ impl CoherentPointDriftTransform {
             mut matches: Vec<(usize, usize)>,
         ) -> Vec<(usize, usize)> {
             if probs == vec![] {
-                return matches
+                return matches;
             }
             let (max_index, max_value) = probs
                 .iter()
@@ -219,10 +219,11 @@ impl CoherentPointDriftTransform {
                 .collect::<Vec<((usize, usize), &f32)>>();
             generate_matching_inner(probs, matches)
         }
-        let indexed_probabilities: Vec<((usize, usize), &f32)> = self.probability_of_match
+        let indexed_probabilities: Vec<((usize, usize), &f32)> = self
+            .probability_of_match
             .indexed_iter()
             .collect::<Vec<((usize, usize), &f32)>>();
-        let matching: Vec<(usize, usize)> = 
+        let matching: Vec<(usize, usize)> =
             generate_matching_inner(indexed_probabilities, Vec::new());
         println!("{:?}", matching);
         matching
@@ -370,19 +371,11 @@ mod tests {
                 0.5 - small_delta,
                 0.0 + small_delta,
                 0.0 - small_delta,
-            ]
-        ).unwrap();
-        let target_points = Array::from_shape_vec(
-            (3, 2),
-            vec![
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.5,
-                0.5,
-            ]
-        ).unwrap();
+            ],
+        )
+        .unwrap();
+        let target_points =
+            Array::from_shape_vec((3, 2), vec![0.0, 0.0, 1.0, 0.0, 0.5, 0.5]).unwrap();
         let mut cpd_transform = CoherentPointDriftTransform::new(
             target_points,
             source_points,
@@ -413,19 +406,11 @@ mod tests {
                 0.0 - small_delta,
                 3.0 + small_delta,
                 3.5 - small_delta,
-            ]
-        ).unwrap();
-        let target_points = Array::from_shape_vec(
-            (3, 2),
-            vec![
-                0.0,
-                0.0,
-                1.0,
-                0.0,
-                0.5,
-                0.5,
-            ]
-        ).unwrap();
+            ],
+        )
+        .unwrap();
+        let target_points =
+            Array::from_shape_vec((3, 2), vec![0.0, 0.0, 1.0, 0.0, 0.5, 0.5]).unwrap();
         let mut cpd_transform = CoherentPointDriftTransform::new(
             target_points,
             source_points,

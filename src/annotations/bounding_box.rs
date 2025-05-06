@@ -277,7 +277,13 @@ mod tests {
         let right = 2_f32;
         let bottom = 1_f32;
         let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
-        assert_eq!(bbox.center(), Point { x: 1_f32, y: 0.5_f32 });
+        assert_eq!(
+            bbox.center(),
+            Point {
+                x: 1_f32,
+                y: 0.5_f32
+            }
+        );
     }
 
     #[test]
