@@ -91,7 +91,7 @@ impl BoundingBoxGeometry for BoundingBoxWithKeypoint {
         self.bounding_box.area()
     }
 
-    fn center(&self) -> (f32, f32) {
+    fn center(&self) -> Point {
         self.bounding_box.center()
     }
 

@@ -1,3 +1,4 @@
+use crate::annotations::point::Point;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
@@ -105,7 +106,7 @@ pub trait BoundingBoxGeometry {
     fn bottom_mut(&mut self) -> &mut f32;
     fn category_mut(&mut self) -> &mut String;
     fn area(&self) -> f32;
-    fn center(&self) -> (f32, f32);
+    fn center(&self) -> Point;
     fn as_xyxy(&self) -> (f32, f32, f32, f32);
     fn intersection_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32;
     fn union_area<T: BoundingBoxGeometry>(&self, other: &T) -> f32;
@@ -149,11 +150,11 @@ impl BoundingBoxGeometry for BoundingBox {
         (self.right() - self.left()) * (self.bottom() - self.top())
     }
 
-    fn center(&self) -> (f32, f32) {
-        (
-            0.5_f32 * (self.right() - self.left()),
-            0.5_f32 * (self.bottom() - self.top()),
-        )
+    fn center(&self) -> Point {
+        Point {
+            x: 0.5_f32 * (self.right() - self.left()),
+            y: 0.5_f32 * (self.bottom() - self.top()),
+        }
     }
 
     fn as_xyxy(&self) -> (f32, f32, f32, f32) {
@@ -276,7 +277,7 @@ mod tests {
         let right = 2_f32;
         let bottom = 1_f32;
         let bbox = BoundingBox::new(left, top, right, bottom, String::from("test")).unwrap();
-        assert_eq!(bbox.center(), (1_f32, 0.5_f32));
+        assert_eq!(bbox.center(), Point { x: 1_f32, y: 0.5_f32 });
     }
 
     #[test]
