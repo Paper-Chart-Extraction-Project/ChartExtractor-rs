@@ -120,26 +120,4 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display> (
     detections: Vec<Detection<T>>
 ) -> Vec<Detection<T>> {
     vec![]
-        let image = convert_rgb_image_to_owned_array(image);
-        let output = tile_and_predict(
-            &model,
-            image,
-            model_parameters.tile_size,
-            model_parameters.overlap_proportion,
-            model_parameters.confidence_threshold,
-            model_parameters.nms_threshold
-        ).unwrap();
-        return output
-    }
-    else {
-        let output = tile_and_predict(
-            &model,
-            image,
-            model_parameters.tile_size,
-            model_parameters.overlap_proportion,
-            model_parameters.confidence_threshold,
-            model_parameters.nms_threshold
-        ).unwrap();
-        return output
-    }
 }
