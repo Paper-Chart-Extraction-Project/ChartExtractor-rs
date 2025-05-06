@@ -1,8 +1,11 @@
 extern crate openblas_src;
 
 use crate::annotations::point::Point;
+use crate::annotations::bounding_box::{BoundingBox, BoundingBoxError, BoundingBoxGeometry};
+use crate::annotations::bounding_box_with_keypoint::BoundingBoxWithKeypoint;
 use ndarray::{Array, ArrayBase, Axis, Dim, OwnedRepr, concatenate, stack};
 use ndarray_linalg::Solve;
+use std::cmp::{Ordering, max_by, min_by};
 use std::iter::zip;
 
 pub struct TpsTransform {
@@ -34,6 +37,56 @@ impl TpsTransform {
         let new_x = out.index_axis(Axis(1), 0).to_vec()[0];
         let new_y = out.index_axis(Axis(1), 1).to_vec()[0];
         Point { x: new_x, y: new_y }
+    }
+
+    pub fn transform_bounding_box(
+        &self,
+        bbox: BoundingBox
+    ) -> Result<BoundingBox, BoundingBoxError> {
+        let category: String = bbox.category().clone();
+        let (new_left, new_top, new_right, new_bottom) = self.transform_box(bbox);
+        BoundingBox::new(new_left, new_top, new_right, new_bottom, category)
+    }
+
+    pub fn transform_bounding_box_with_keypoint(
+        &self,
+        bbox_with_kp: BoundingBoxWithKeypoint,
+    ) -> Result<BoundingBoxWithKeypoint, BoundingBoxError> {
+        let category: String = bbox_with_kp.category().clone();
+        let keypoint_x: f32 = bbox_with_kp.get_keypoint_x();
+        let keypoint_y: f32 = bbox_with_kp.get_keypoint_y();
+        let keypoint: Point = Point { x: keypoint_x, y: keypoint_y };
+        let new_keypoint: Point = self.transform_point(keypoint);
+        let (new_left, new_top, new_right, new_bottom) = self.transform_box(bbox_with_kp);
+        BoundingBoxWithKeypoint::new(
+            new_left,
+            new_top,
+            new_right,
+            new_bottom,
+            new_keypoint.x,
+            new_keypoint.y,
+            category,
+        )
+    }
+
+    fn transform_box<T: BoundingBoxGeometry> (&self, bbox: T) -> (f32, f32, f32, f32) {
+        let left_top: Point = Point { x: bbox.left(), y: bbox.top() };
+        let left_bottom: Point = Point { x: bbox.left(), y: bbox.bottom() };
+        let right_top: Point = Point { x: bbox.right(), y: bbox.top() };
+        let right_bottom: Point = Point { x: bbox.right(), y: bbox.bottom() };
+
+        let transformed_left_top: Point = self.transform_point(left_top);
+        let transformed_left_bottom: Point = self.transform_point(left_bottom);
+        let transformed_right_top: Point = self.transform_point(right_top);
+        let transformed_right_bottom: Point = self.transform_point(right_bottom);
+        
+        let f32_cmp = |a: &f32, b: &f32| a.total_cmp(b);
+        let new_left: f32 = min_by(left_top.x, left_bottom.x, f32_cmp);
+        let new_top: f32 = min_by(left_top.y, right_top.y, f32_cmp);
+        let new_right: f32 = max_by(right_top.x, right_bottom.x, f32_cmp);
+        let new_bottom: f32 = max_by(left_bottom.y, right_bottom.y, f32_cmp);
+
+        (new_left, new_top, new_right, new_bottom)
     }
 }
 
