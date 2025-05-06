@@ -99,6 +99,7 @@ pub fn digitize(
         parameters.intraop_document_landmarks_centroids,
         parameters.intraop_document_landmarks_cpd_parameters
     );
+
     Err("")
 }
 
@@ -188,4 +189,25 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
         .map(|(_, det)| det)
         .collect::<Vec<Detection<T>>>();
     filtered_detections
+}
+
+fn create_tps_transform(
+    source_detections: Vec<Detection<BoundingBox>>,
+    target_centroids: HashMap<String, Point>,
+) -> TpsTransform {
+    let mut source_hashmap: HashMap<String, Point> = HashMap::new();
+    for det in source_detections.into_iter() {
+        source_hashmap.insert(det.annotation.category().clone(), det.annotation.center());
+    }
+
+    let mut source_points: Vec<Point> = Vec::new();
+    let mut target_points: Vec<Point> = Vec::new();
+    for (class, centroid) in target_centroids.into_iter() {
+        if source_hashmap.contains_key(&class) {
+            source_points.push(source_hashmap.get(&class).unwrap().clone());
+            target_points.push(centroid.clone());
+        }
+    }
+
+    TpsTransform::new(source_points, target_points)
 }
