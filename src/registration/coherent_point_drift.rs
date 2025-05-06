@@ -398,4 +398,47 @@ mod tests {
         let true_matches = vec![(2, 0), (0, 1), (1, 2)];
         assert_eq!(matches, true_matches)
     }
+
+    #[test]
+    fn test_matching_extra_point() {
+        let small_delta: f32 = 0.2;
+        let source_points = Array::from_shape_vec(
+            (4, 2),
+            vec![
+                1.0 - small_delta,
+                0.0 + small_delta,
+                0.5 + small_delta,
+                0.5 - small_delta,
+                0.0 + small_delta,
+                0.0 - small_delta,
+                3.0 + small_delta,
+                3.5 - small_delta,
+            ]
+        ).unwrap();
+        let target_points = Array::from_shape_vec(
+            (3, 2),
+            vec![
+                0.0,
+                0.0,
+                1.0,
+                0.0,
+                0.5,
+                0.5,
+            ]
+        ).unwrap();
+        let mut cpd_transform = CoherentPointDriftTransform::new(
+            target_points,
+            source_points,
+            0.01,
+            20.0,
+            Some(0.0),
+            None,
+            Some(100),
+            Some(true),
+        );
+        cpd_transform.register();
+        let matches = cpd_transform.generate_matching();
+        let true_matches = vec![(2, 0), (0, 1), (1, 2)];
+        assert_eq!(matches, true_matches)
+    }
 }
