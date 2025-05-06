@@ -46,10 +46,10 @@ impl fmt::Display for BoundingBoxWithKeypoint {
 }
 
 impl BoundingBoxWithKeypoint {
-    fn get_keypoint_x(&self) -> f32 {
+    pub fn get_keypoint_x(&self) -> f32 {
         self.keypoint.x
     }
-    fn get_keypoint_y(&self) -> f32 {
+    pub fn get_keypoint_y(&self) -> f32 {
         self.keypoint.y
     }
 }
