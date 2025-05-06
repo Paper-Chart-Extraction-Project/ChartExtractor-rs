@@ -8,6 +8,7 @@ use crate::image_utils::tiling::{OverlapProportion, pad_image_to_fit_tiling_para
 use crate::object_detection::object_detection_utils::{read_classes_txt_file, tile_and_predict};
 use crate::object_detection::yolov11_bounding_box::Yolov11BoundingBox;
 use crate::registration::coherent_point_drift::CoherentPointDriftTransform;
+use crate::registration::thin_plate_splines::TpsTransform;
 use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -25,17 +26,32 @@ pub struct BoundingBoxModelParameters<'a> {
     pub nms_threshold: f32,
 }
 
-struct DigitzationParameters<'a> {
+/// All the parameters for doing coherent point drift.
+pub struct CpdParameters {
+    pub lambda: f32,
+    pub beta: f32,
+    pub weight_of_uniform_dist: f32,
+    pub tolerance: f32,
+    pub max_iterations: u32,
+    pub debug: bool,
+}
+
+pub struct DigitzationParameters<'a> {
+    // document model parameters
     intraop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
     handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
     checkbox_model_parameters: BoundingBoxModelParameters<'a>,
+    // paths to centroids.
     intraop_document_landmarks_centroids: HashMap<String, Point>,
     preop_postop_document_landmarks_centroids: HashMap<String, Point>,
     intraop_checkboxes_centroids: HashMap<String, Point>,
     preop_postop_checkboxes_centroids: HashMap<String, Point>,
     intraop_number_boxes_centroids: HashMap<String, Point>,
     preop_postop_number_boxes_centroids: HashMap<String, Point>,
+    // parameters for coherent point drift.
+    intraop_document_landmarks_cpd_parameters: CpdParameters,
+    preop_postop_document_landmarks_cpd_parameters: CpdParameters,
 }
 
 pub fn digitize(
@@ -78,6 +94,11 @@ pub fn digitize(
         use_adaptive_padding,
     );
 
+    let filtered_intraop_document_landmarks = filter_detections_with_cpd(
+        intraop_document_landmarks,
+        parameters.intraop_document_landmarks_centroids,
+        parameters.intraop_document_landmarks_cpd_parameters
+    );
     Err("")
 }
 
@@ -121,14 +142,9 @@ pub fn run_yolov11_bounding_box_model(
 /// all of the detections who do match, but whose predicted class does not match
 /// the class of its match.
 pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
-    ground_truth_centroids: HashMap<String, Point>,
     detections: Vec<Detection<T>>,
-    lambda: f32,
-    beta: f32,
-    weight_of_uniform_dist: f32,
-    tolerance: f32,
-    max_iterations: u32,
-    debug: bool,
+    ground_truth_centroids: HashMap<String, Point>,
+    cpd_params: CpdParameters,
 ) -> Vec<Detection<T>> {
     let detections_as_points = detections
         .iter()
@@ -144,12 +160,12 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
     let mut cpd: CoherentPointDriftTransform = CoherentPointDriftTransform::from_point_vectors(
         gt_centroids_as_points,
         detections_as_points,
-        lambda,
-        beta,
-        Some(weight_of_uniform_dist),
-        Some(tolerance),
-        Some(max_iterations),
-        Some(debug),
+        cpd_params.lambda,
+        cpd_params.beta,
+        Some(cpd_params.weight_of_uniform_dist),
+        Some(cpd_params.tolerance),
+        Some(cpd_params.max_iterations),
+        Some(cpd_params.debug),
     );
     cpd.register();
     let matches: Vec<(usize, usize)> = cpd.generate_matching();
