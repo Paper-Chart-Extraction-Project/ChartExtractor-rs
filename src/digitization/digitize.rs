@@ -7,6 +7,7 @@ use crate::image_utils::image_io::read_image_as_array4;
 use crate::image_utils::tiling::{OverlapProportion, pad_image_to_fit_tiling_params};
 use crate::object_detection::object_detection_utils::{read_classes_txt_file, tile_and_predict};
 use crate::object_detection::yolov11_bounding_box::Yolov11BoundingBox;
+use crate::registration::coherent_point_drift::CoherentPointDriftTransform;
 use ndarray::{ArrayBase, Dim, OwnedRepr};
 use std::collections::HashMap;
 use std::fmt::Display;
@@ -45,7 +46,7 @@ pub fn digitize(
 ) -> Result<Chart, &'static str> {
     let preop_postop_image = read_image_as_array4(preop_postop_image_filepath);
     let intraop_image = read_image_as_array4(intraop_image_filepath);
-    
+
     let intraop_document_landmarks = run_yolov11_bounding_box_model(
         &intraop_image,
         &parameters.intraop_document_landmark_model_parameters,
@@ -76,7 +77,7 @@ pub fn digitize(
         &parameters.checkbox_model_parameters,
         use_adaptive_padding,
     );
-    
+
     Err("")
 }
 
@@ -115,9 +116,60 @@ pub fn run_yolov11_bounding_box_model(
     .unwrap()
 }
 
-pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display> (
+/// Uses cpd to match the detections to a perfect, scanned version of the chart
+/// then removes all detections which don't find a match, and further removes
+/// all of the detections who do match, but whose predicted class does not match
+/// the class of its match.
+pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
     ground_truth_centroids: HashMap<String, Point>,
-    detections: Vec<Detection<T>>
+    detections: Vec<Detection<T>>,
+    lambda: f32,
+    beta: f32,
+    weight_of_uniform_dist: f32,
+    tolerance: f32,
+    max_iterations: u32,
+    debug: bool,
 ) -> Vec<Detection<T>> {
-    vec![]
+    let detections_as_points = detections
+        .iter()
+        .map(|d| d.annotation.center())
+        .collect::<Vec<Point>>();
+
+    let pairs = ground_truth_centroids
+        .into_iter()
+        .collect::<Vec<(String, Point)>>();
+    let gt_centroid_classes = pairs.iter().map(|p| p.0.clone()).collect::<Vec<String>>();
+    let gt_centroids_as_points = pairs.iter().map(|p| p.1.clone()).collect::<Vec<Point>>();
+
+    let mut cpd: CoherentPointDriftTransform = CoherentPointDriftTransform::from_point_vectors(
+        gt_centroids_as_points,
+        detections_as_points,
+        lambda,
+        beta,
+        Some(weight_of_uniform_dist),
+        Some(tolerance),
+        Some(max_iterations),
+        Some(debug),
+    );
+    cpd.register();
+    let matches: Vec<(usize, usize)> = cpd.generate_matching();
+    let indexes_of_matched_detections: Vec<usize> = matches
+        .clone()
+        .into_iter()
+        .map(|(ix, _)| ix)
+        .collect::<Vec<usize>>();
+
+    // filter all points from detections whose index is not in the 0 index of
+    // any tuple in the cpd transform, and whose class string is not equal
+    // to the class string of the centroid key.
+    let filtered_detections: Vec<Detection<T>> = detections
+        .into_iter()
+        .enumerate()
+        .filter(|(ix, det)| {
+            indexes_of_matched_detections.contains(ix)
+                && *det.annotation.category() == gt_centroid_classes[*ix]
+        })
+        .map(|(_, det)| det)
+        .collect::<Vec<Detection<T>>>();
+    filtered_detections
 }
