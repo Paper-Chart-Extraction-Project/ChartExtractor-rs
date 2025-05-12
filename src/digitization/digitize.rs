@@ -10,14 +10,16 @@ use crate::object_detection::yolov11_bounding_box::Yolov11BoundingBox;
 use crate::registration::coherent_point_drift::CoherentPointDriftTransform;
 use crate::registration::thin_plate_splines::TpsTransform;
 use ndarray::{ArrayBase, Dim, OwnedRepr};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fmt::Display;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
-pub struct BoundingBoxModelParameters<'a> {
+#[derive(Deserialize, Serialize)]
+pub struct BoundingBoxModelParameters {
     pub name: String,
-    pub model_path: &'a Path,
-    pub class_names_path: &'a Path,
+    pub model_path: PathBuf,
+    pub class_names_path: PathBuf,
     pub input_width: usize,
     pub input_height: usize,
     pub tile_size: u32,
@@ -27,6 +29,7 @@ pub struct BoundingBoxModelParameters<'a> {
 }
 
 /// All the parameters for doing coherent point drift.
+#[derive(Deserialize, Serialize)]
 pub struct CpdParameters {
     pub lambda: f32,
     pub beta: f32,
@@ -36,12 +39,12 @@ pub struct CpdParameters {
     pub debug: bool,
 }
 
-pub struct DigitzationParameters<'a> {
+pub struct DigitzationParameters {
     // document model parameters
-    intraop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
-    preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters<'a>,
-    handwritten_numbers_model_parameters: BoundingBoxModelParameters<'a>,
-    checkbox_model_parameters: BoundingBoxModelParameters<'a>,
+    intraop_document_landmark_model_parameters: BoundingBoxModelParameters,
+    preop_postop_document_landmark_model_parameters: BoundingBoxModelParameters,
+    handwritten_numbers_model_parameters: BoundingBoxModelParameters,
+    checkbox_model_parameters: BoundingBoxModelParameters,
     // paths to centroids.
     intraop_document_landmarks_centroids: HashMap<String, Point>,
     preop_postop_document_landmarks_centroids: HashMap<String, Point>,

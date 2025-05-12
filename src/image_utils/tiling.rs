@@ -2,6 +2,7 @@ use crate::image_utils::image_conversion::convert_array_view_to_rgb_image;
 use crate::image_utils::padding::pad_right_bottom_img_rbg8;
 use image::RgbImage;
 use ndarray::{ArrayBase, Dim, OwnedRepr, ViewRepr, s};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 
 /// A set of custom errors for more informative error handling.
@@ -76,7 +77,7 @@ impl fmt::Display for TilingError {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct OverlapProportion {
     pub numerator: u32,
     pub denominator: u32,
