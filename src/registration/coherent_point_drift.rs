@@ -39,7 +39,7 @@ pub struct CoherentPointDriftTransform {
     w_coefs: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     /// A vector of json formatted lists containing the transformed_points at all
     /// iterations. Use with caution, and set max_iterations low to start.
-    history: Vec<String>,
+    pub history: Vec<String>,
     /// Whether or not to record the history of the transformed points.
     debug: bool,
 }
@@ -425,5 +425,37 @@ mod tests {
         let matches = cpd_transform.generate_matching();
         let true_matches = vec![(2, 0), (0, 1), (1, 2)];
         assert_eq!(matches, true_matches)
+    }
+
+    #[test]
+    fn test_solve_matrices() {
+        let mat_1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                0.0,
+                1.0,
+                4.0,
+                3.0
+            ]
+        ).unwrap();
+        let mat_2: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                1.0,
+                2.0,
+                5.0,
+                4.0
+            ]
+        ).unwrap();
+        let true_soln:  ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                0.5,
+                -0.5,
+                1.0,
+                2.0
+            ]
+        ).unwrap(); 
+        assert_eq!(true_soln, solve_matrices(&mat_1, &mat_2))
     }
 }
