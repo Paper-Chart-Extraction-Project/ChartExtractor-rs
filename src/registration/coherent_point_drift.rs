@@ -491,4 +491,33 @@ mod tests {
         let dists = compute_squared_distance(&mat_1, &mat_2);
         assert_eq!(true_sq_dist, dists)
     }
+
+    #[test]
+    fn test_compute_variance() {
+        let mat_1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                0.0,
+                1.0,
+                4.0,
+                3.0
+            ]
+        ).unwrap();
+        let mat_2: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                1.0,
+                2.0,
+                5.0,
+                4.0
+            ]
+        ).unwrap();
+        let true_variance: f32 = 6.0;
+        let computed_variance: f32 = {
+            let sum_sq_dists = compute_squared_distance(&mat_1, &mat_2).sum();
+            let denominator: f32 = 2_f32 * 2_f32 * 2_f32;
+            sum_sq_dists / denominator
+        };
+        assert_eq!(true_variance, computed_variance)
+    }
 }
