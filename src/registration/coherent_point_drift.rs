@@ -225,7 +225,7 @@ impl CoherentPointDriftTransform {
             .collect::<Vec<((usize, usize), &f32)>>();
         let matching: Vec<(usize, usize)> =
             generate_matching_inner(indexed_probabilities, Vec::new());
-        println!("{:?}", matching);
+        //println!("{:?}", matching);
         matching
     }
 }
@@ -254,7 +254,7 @@ fn compute_gaussian_kernel(
     matrix_b: &ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>>,
     beta: f32,
 ) -> ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> {
-    let sum_sq_dists = compute_squared_distance(matrix_a, matrix_b);
+    let sum_sq_dists = compute_squared_distance(matrix_b, matrix_a);
     (-sum_sq_dists / (2.0 * beta.powi(2))).exp()
 }
 
@@ -519,5 +519,44 @@ mod tests {
             sum_sq_dists / denominator
         };
         assert_eq!(true_initial_variance, computed_initial_variance)
+    }
+
+    #[test]
+    fn test_compute_gaussian_kernel() {
+        let mat_1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                0.0,
+                1.0,
+                4.0,
+                3.0
+            ]
+        ).unwrap();
+        let mat_2: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                1.0,
+                2.0,
+                5.0,
+                4.0
+            ]
+        ).unwrap();
+        let true_gaussian_kernel: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> 
+            = Array::from_shape_vec(
+                (2, 2),
+                vec![
+                    0.77880078,
+                    0.014264234,
+                    0.2865048,
+                    0.77880078
+                ]
+            ).unwrap();
+        let computed_gaussian_kernel: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> 
+            = compute_gaussian_kernel(
+            &mat_1,
+            &mat_2,
+            2.0
+        );
+        assert_eq!(true_gaussian_kernel, computed_gaussian_kernel)
     }
 }
