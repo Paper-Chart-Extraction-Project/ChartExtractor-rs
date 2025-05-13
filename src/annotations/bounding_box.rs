@@ -42,7 +42,7 @@ impl std::error::Error for BoundingBoxError {}
 ///
 /// This project uses the standard convention of the left side of the image being x=0 and the top
 /// of the image being y=0.
-#[derive(Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct BoundingBox {
     left: f32,
     top: f32,

@@ -9,7 +9,7 @@ use std::fmt;
 /// to place keypoints into the frame as well. Therefore, the output of pose models is both a
 /// bounding box as well as a list of points relating to the "pose" of the object. For this project
 /// we only have pose models that predict a single keypoint.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct BoundingBoxWithKeypoint {
     bounding_box: BoundingBox,
     keypoint: Point,
