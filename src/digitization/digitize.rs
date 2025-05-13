@@ -2,6 +2,7 @@ use crate::annotations::bounding_box::{BoundingBox, BoundingBoxGeometry};
 use crate::annotations::detection::Detection;
 use crate::annotations::point::Point;
 use crate::digitization::chart::Chart;
+use crate::digitization::digitize_checkboxes::digitize_checkboxes;
 use crate::image_utils::image_conversion::convert_rgb_image_to_owned_array;
 use crate::image_utils::image_io::read_image_as_array4;
 use crate::image_utils::tiling::{OverlapProportion, pad_image_to_fit_tiling_params};
