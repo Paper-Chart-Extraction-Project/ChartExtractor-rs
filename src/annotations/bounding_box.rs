@@ -152,8 +152,8 @@ impl BoundingBoxGeometry for BoundingBox {
 
     fn center(&self) -> Point {
         Point {
-            x: 0.5_f32 * (self.right() - self.left()),
-            y: 0.5_f32 * (self.bottom() - self.top()),
+            x: 0.5_f32 * (self.right() + self.left()),
+            y: 0.5_f32 * (self.bottom() + self.top()),
         }
     }
 
