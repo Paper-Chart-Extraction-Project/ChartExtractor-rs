@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::path::{Path, PathBuf};
 
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct BoundingBoxModelParameters {
     pub name: String,
     pub model_path: PathBuf,
@@ -29,7 +29,7 @@ pub struct BoundingBoxModelParameters {
 }
 
 /// All the parameters for doing coherent point drift.
-#[derive(Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CpdParameters {
     pub lambda: f32,
     pub beta: f32,
@@ -145,17 +145,17 @@ pub fn run_yolov11_bounding_box_model(
 /// then removes all detections which don't find a match, and further removes
 /// all of the detections who do match, but whose predicted class does not match
 /// the class of its match.
-pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
+pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display+ std::fmt::Debug>(
     detections: Vec<Detection<T>>,
     ground_truth_centroids: HashMap<String, Point>,
     cpd_params: CpdParameters,
-) -> Vec<Detection<T>> {
+) -> Vec<Detection<T>> where T: Clone {
     let detections_as_points = detections
         .iter()
         .map(|d| d.annotation.center())
         .collect::<Vec<Point>>();
 
-    let pairs = ground_truth_centroids
+    let pairs = ground_truth_centroids.clone()
         .into_iter()
         .collect::<Vec<(String, Point)>>();
     let gt_centroid_classes = pairs.iter().map(|p| p.0.clone()).collect::<Vec<String>>();
@@ -173,24 +173,12 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display>(
     );
     cpd.register();
     let matches: Vec<(usize, usize)> = cpd.generate_matching();
-    let indexes_of_matched_detections: Vec<usize> = matches
-        .clone()
-        .into_iter()
-        .map(|(ix, _)| ix)
-        .collect::<Vec<usize>>();
-
-    // filter all points from detections whose index is not in the 0 index of
-    // any tuple in the cpd transform, and whose class string is not equal
-    // to the class string of the centroid key.
-    let filtered_detections: Vec<Detection<T>> = detections
-        .into_iter()
-        .enumerate()
-        .filter(|(ix, det)| {
-            indexes_of_matched_detections.contains(ix)
-                && *det.annotation.category() == gt_centroid_classes[*ix]
-        })
-        .map(|(_, det)| det)
-        .collect::<Vec<Detection<T>>>();
+    let mut filtered_detections: Vec<Detection<T>> = Vec::new();
+    for (src_ix, tar_ix) in matches.clone().into_iter() {
+        if *detections[src_ix].annotation.category() == pairs[tar_ix].0 {
+            filtered_detections.push(detections[src_ix].clone());
+        }
+    }
     filtered_detections
 }
 
