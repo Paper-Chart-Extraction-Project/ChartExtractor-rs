@@ -225,7 +225,6 @@ impl CoherentPointDriftTransform {
             .collect::<Vec<((usize, usize), &f32)>>();
         let matching: Vec<(usize, usize)> =
             generate_matching_inner(indexed_probabilities, Vec::new());
-        //println!("{:?}", matching);
         matching
     }
 }
