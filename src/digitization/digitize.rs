@@ -99,8 +99,21 @@ pub fn digitize(
 
     let filtered_intraop_document_landmarks = filter_detections_with_cpd(
         intraop_document_landmarks,
-        parameters.intraop_document_landmarks_centroids,
+        parameters.intraop_document_landmarks_centroids.clone(),
         parameters.intraop_document_landmarks_cpd_parameters
+    );
+    let intraop_tps_transform: TpsTransform = create_tps_transform(
+        filtered_intraop_document_landmarks,
+        parameters.intraop_document_landmarks_centroids
+    );
+    let filtered_preop_postop_document_landmarks = filter_detections_with_cpd(
+        preop_postop_document_landmarks,
+        parameters.preop_postop_document_landmarks_centroids.clone(),
+        parameters.preop_postop_document_landmarks_cpd_parameters
+    );
+    let preop_postop_tps_transform: TpsTransform = create_tps_transform(
+        filtered_preop_postop_document_landmarks,
+        parameters.preop_postop_document_landmarks_centroids
     );
 
     Err("")
