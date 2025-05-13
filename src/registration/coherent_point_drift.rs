@@ -458,4 +458,37 @@ mod tests {
         ).unwrap(); 
         assert_eq!(true_soln, solve_matrices(&mat_1, &mat_2))
     }
+
+    #[test]
+    fn test_compute_squared_distance() {
+        let mat_1: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                0.0,
+                1.0,
+                4.0,
+                3.0
+            ]
+        ).unwrap();
+        let mat_2: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                1.0,
+                2.0,
+                5.0,
+                4.0
+            ]
+        ).unwrap();
+        let true_sq_dist: ArrayBase<OwnedRepr<f32>, Dim<[usize; 2]>> = Array::from_shape_vec(
+            (2, 2),
+            vec![
+                2.0,
+                10.0,
+                34.0,
+                2.0,
+            ]
+        ).unwrap();
+        let dists = compute_squared_distance(&mat_1, &mat_2);
+        assert_eq!(true_sq_dist, dists)
+    }
 }
