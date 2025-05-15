@@ -196,7 +196,7 @@ pub fn filter_detections_with_cpd<T: BoundingBoxGeometry + Display+ std::fmt::De
     filtered_detections
 }
 
-fn create_tps_transform(
+pub fn create_tps_transform(
     source_detections: Vec<Detection<BoundingBox>>,
     target_centroids: HashMap<String, Point>,
 ) -> TpsTransform {
