@@ -45,6 +45,7 @@ impl TpsTransform {
     ) -> Result<BoundingBox, BoundingBoxError> {
         let category: String = bbox.category().clone();
         let (new_left, new_top, new_right, new_bottom) = self.transform_box(bbox);
+
         BoundingBox::new(new_left, new_top, new_right, new_bottom, category)
     }
 
@@ -81,10 +82,10 @@ impl TpsTransform {
         let transformed_right_bottom: Point = self.transform_point(right_bottom);
         
         let f32_cmp = |a: &f32, b: &f32| a.total_cmp(b);
-        let new_left: f32 = min_by(left_top.x, left_bottom.x, f32_cmp);
-        let new_top: f32 = min_by(left_top.y, right_top.y, f32_cmp);
-        let new_right: f32 = max_by(right_top.x, right_bottom.x, f32_cmp);
-        let new_bottom: f32 = max_by(left_bottom.y, right_bottom.y, f32_cmp);
+        let new_left: f32 = min_by(transformed_left_top.x, transformed_left_bottom.x, f32_cmp);
+        let new_top: f32 = min_by(transformed_left_top.y, transformed_right_top.y, f32_cmp);
+        let new_right: f32 = max_by(transformed_right_top.x, transformed_right_bottom.x, f32_cmp);
+        let new_bottom: f32 = max_by(transformed_left_bottom.y, transformed_right_bottom.y, f32_cmp);
 
         (new_left, new_top, new_right, new_bottom)
     }
